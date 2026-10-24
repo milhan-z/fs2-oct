@@ -134,6 +134,11 @@
     background-blend-mode: soft-light, normal;
     color: var(--color-cream);
   }
+  /* a page that has just finished loading eases in as one piece */
+  .fade-in { animation: fs2-fade-in 0.28s ease-out both; }
+  @keyframes fs2-fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
+
   .mat-paper {
     background-color: var(--color-paper);
     background-image: var(--tex-paper-noise), var(--tex-guilloche);

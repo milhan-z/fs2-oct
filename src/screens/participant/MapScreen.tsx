@@ -6,7 +6,7 @@ import { useContent } from '../../app/providers'
 import { useParticipant } from '../../app/participant'
 import { MapView, type BoothStatus, type MapMode } from '../../map/MapView'
 import { BoothSheet } from './BoothSheet'
-import { PageSkeleton, Tape } from '../../booklet/print'
+import { FadeImg, Tape } from '../../booklet/print'
 import { setOrigin } from '../../booklet/pages'
 import type { Content, MyState } from '../../data/types'
 import type { Progress } from '../../data/rules'
@@ -39,7 +39,7 @@ export function MapScreen() {
     return s
   }, [prog, content])
 
-  if (!content || !state || !prog) return <PageSkeleton />
+  if (!content || !state || !prog) return <MapSkeleton />
   const booths = [...content.booths].sort((a, b) => a.sort - b.sort)
   const next = nextStep(content, state, prog)
   const map = (interactive: boolean) => (
@@ -63,11 +63,11 @@ export function MapScreen() {
   )
 
   return (
-    <div className="mat-cover relative flex min-h-full flex-col pb-3 text-cream">
+    <div className="fade-in mat-cover relative flex min-h-full flex-col pb-3 text-cream">
       {/* paper label stuck inside the back cover */}
       <div className="mat-paper relative mx-3 mt-11 flex items-center gap-3 px-3 py-2.5 shadow-[var(--shadow-contact)]">
         <div className="aspect-[3/4] w-10 flex-none overflow-hidden bg-[#2a2f37] shadow-[var(--shadow-contact)]">
-          {state.participant.photo && <img src={state.participant.photo} alt="" className="h-full w-full object-cover" />}
+          {state.participant.photo && <FadeImg src={state.participant.photo} className="h-full w-full object-cover" />}
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] text-ink/70">Hi, {state.participant.nama}</p>
@@ -92,17 +92,20 @@ export function MapScreen() {
         ))}
       </div>
 
-      <FoldedMap renderMap={map}>
+      <FoldedMap renderMap={map} />
+
+      {/* the legend sits under the map, never on top of it */}
+      <ul className="mx-4 mt-7 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] font-semibold text-cream/90" aria-label="Pin legend">
         {mode === 'lounge' ? (
-          <p className="absolute bottom-6 left-3 flex gap-3 text-[11px] font-semibold text-cream/85">
-            <span>○ Not yet</span>
-            <span className="text-[#ff8a80]">● Stamped</span>
-            <span className="text-ok-bright">● Notes done</span>
-          </p>
+          <>
+            <li>○ Not yet</li>
+            <li className="text-[#ff8a80]">● Stamped</li>
+            <li className="text-ok-bright">● Notes done</li>
+          </>
         ) : (
-          <p className="absolute bottom-6 left-3 text-[11px] font-semibold text-cream/85">Tap the Lounge to zoom in</p>
+          <li>Tap the Lounge to zoom in</li>
         )}
-      </FoldedMap>
+      </ul>
 
       {/* portal: the sticker overlays the whole scene, not just the page */}
       {createPortal(
@@ -116,7 +119,7 @@ export function MapScreen() {
 }
 
 /** The folded floor plan: slides out of the back pocket, then unfolds top and bottom panels. */
-function FoldedMap({ renderMap, children }: { renderMap: (interactive: boolean) => React.ReactNode; children: React.ReactNode }) {
+function FoldedMap({ renderMap, children }: { renderMap: (interactive: boolean) => React.ReactNode; children?: React.ReactNode }) {
   const reduce = useReducedMotion()
   const box = useRef<HTMLDivElement>(null)
   const [h, setH] = useState(0)
@@ -197,4 +200,28 @@ function nextStep(content: Content, state: MyState, prog: Progress): { label: st
   const noResume = booths.find((b) => !prog.resumeComplete.has(b.id))
   if (noResume) return { label: `Write notes for ${noResume.nama}`, to: `/visa/${noResume.id}` }
   return { label: 'Give feedback & submit', to: '/exit' }
+}
+
+/** The map page's own placeholder: same blocks in the same places, so the real page fades in without a jump. */
+function MapSkeleton() {
+  return (
+    <div className="mat-cover relative flex min-h-full flex-col pb-3" aria-busy="true" aria-label="Loading the booth map">
+      <div className="mat-paper relative mx-3 mt-11 flex items-center gap-3 px-3 py-2.5 shadow-[var(--shadow-contact)]">
+        <div className="aspect-[3/4] w-10 flex-none bg-ink/15 motion-safe:animate-pulse" />
+        <div className="flex-1">
+          <div className="h-3.5 w-32 bg-ink/10 motion-safe:animate-pulse" />
+          <div className="mt-2 h-6 w-40 bg-ink/15 motion-safe:animate-pulse" />
+        </div>
+      </div>
+      <div className="mx-3 mt-4 flex items-center gap-2">
+        <div className="h-7 w-16 bg-tape/70 motion-safe:animate-pulse" />
+        <div className="h-7 w-52 bg-yellow/40 motion-safe:animate-pulse" />
+      </div>
+      <div className="mx-4 mt-4 flex h-11 items-center gap-6">
+        <div className="h-5 w-16 bg-cream/20 motion-safe:animate-pulse" />
+        <div className="h-5 w-28 bg-cream/10 motion-safe:animate-pulse" />
+      </div>
+      <div className="relative mx-3 mt-2 min-h-[380px] flex-1 rounded-[3px] bg-night-ink motion-safe:animate-pulse" style={{ backgroundImage: 'var(--tex-noise)' }} />
+    </div>
+  )
 }

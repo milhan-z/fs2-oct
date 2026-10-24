@@ -26,7 +26,7 @@ export function Login() {
   const nav = useNavigate()
   const reduce = useReducedMotion()
   const { content } = useContent()
-  const { reload } = useParticipant()
+  const { setState } = useParticipant()
   const [step, setStep] = useState<Step>('nrp')
   const [nrp, setNrp] = useState('')
   const [pin, setPin] = useState('')
@@ -39,8 +39,8 @@ export function Login() {
   const [err, setErr] = useState('')
 
   const done = async () => {
-    await reload()
     const st = await api.getMyState()
+    setState(st)
     nav(st.participant.photo ? '/map' : '/photo', { replace: true })
   }
 

@@ -16,14 +16,25 @@ import { CoachTour } from './CoachTour'
 
 // The cover and sign-in page ship in the first bundle; every other page loads on demand and shows
 // a printed page skeleton meanwhile (no spinner).
-const Photo = lazy(() => import('../screens/participant/Photo').then((m) => ({ default: m.Photo })))
-const MapScreen = lazy(() => import('../screens/participant/MapScreen').then((m) => ({ default: m.MapScreen })))
-const Passport = lazy(() => import('../screens/participant/Passport').then((m) => ({ default: m.Passport })))
-const Visa = lazy(() => import('../screens/participant/Visa').then((m) => ({ default: m.Visa })))
-const Exit = lazy(() => import('../screens/participant/Exit').then((m) => ({ default: m.Exit })))
-const Status = lazy(() => import('../screens/participant/Status').then((m) => ({ default: m.Status })))
-const Guide = lazy(() => import('../screens/participant/Guide').then((m) => ({ default: m.Guide })))
-const QrPermit = lazy(() => import('../screens/participant/QrScreen').then((m) => ({ default: m.QrPermit })))
+const loadPhoto = () => import('../screens/participant/Photo')
+const loadMap = () => import('../screens/participant/MapScreen')
+const loadPassport = () => import('../screens/participant/Passport')
+const loadVisa = () => import('../screens/participant/Visa')
+const loadExit = () => import('../screens/participant/Exit')
+const loadStatus = () => import('../screens/participant/Status')
+const loadGuide = () => import('../screens/participant/Guide')
+const loadQr = () => import('../screens/participant/QrScreen')
+const Photo = lazy(() => loadPhoto().then((m) => ({ default: m.Photo })))
+const MapScreen = lazy(() => loadMap().then((m) => ({ default: m.MapScreen })))
+const Passport = lazy(() => loadPassport().then((m) => ({ default: m.Passport })))
+const Visa = lazy(() => loadVisa().then((m) => ({ default: m.Visa })))
+const Exit = lazy(() => loadExit().then((m) => ({ default: m.Exit })))
+const Status = lazy(() => loadStatus().then((m) => ({ default: m.Status })))
+const Guide = lazy(() => loadGuide().then((m) => ({ default: m.Guide })))
+const QrPermit = lazy(() => loadQr().then((m) => ({ default: m.QrPermit })))
+
+/** Every page the passport can turn to, fetched one after another while the browser is idle. */
+const PREFETCH = [loadPhoto, loadMap, loadPassport, loadQr, loadVisa, loadStatus, loadExit, loadGuide, () => import('../screens/participant/Onboarding')]
 
 const EASE_PAGE = [0.65, 0, 0.35, 1] as const
 const LIGHTS_H = 42
@@ -120,6 +131,24 @@ export function Booklet() {
   const bookTop = raw.cover ? 92 : LIGHTS_H
   const bookH = vh - bookTop - 14
   const closedScale = Math.min(0.84, Math.max(0.5, (vh - bookTop - 236) / bookH))
+
+  // warm the page chunks while the cover or the sign-in form is on screen, so turning a page never waits on the network
+  useEffect(() => {
+    const idle = typeof window.requestIdleCallback === 'function'
+    let stop = false
+    const run = async () => {
+      for (const load of PREFETCH) {
+        if (stop) return
+        await load().catch(() => {})
+      }
+    }
+    const id = idle ? window.requestIdleCallback(() => void run(), { timeout: 3000 }) : window.setTimeout(() => void run(), 1200)
+    return () => {
+      stop = true
+      if (idle) window.cancelIdleCallback(id)
+      else clearTimeout(id)
+    }
+  }, [])
 
   // while the cover is closed, the page underneath renders once the browser is idle
   const [underReady, setUnderReady] = useState(!raw.cover)

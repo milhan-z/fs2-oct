@@ -70,11 +70,11 @@ export function MapView({ mode, booths, facilities, rooms, status, onPin, onLoun
           style={{ opacity: buildingOpacity, cursor: onLounge ? 'pointer' : undefined }}
           onClick={mode === 'building' ? onLounge : undefined}
         />
-        <text x={L.x + L.w / 2} y={L.y + L.h - 200} textAnchor="middle" fontFamily="Libre Baskerville" fontWeight="700" fontSize="104" letterSpacing="14" fill="#F9B018">
+        <text x={L.x + L.w / 2} y={L.y + L.h - 146} textAnchor="middle" fontFamily="Libre Baskerville" fontWeight="700" fontSize="104" letterSpacing="14" fill="#F9B018" stroke="#1a0f0c" strokeWidth="12" strokeLinejoin="round" paintOrder="stroke">
           LOUNGE
         </text>
         {fo && (
-          <motion.text style={{ opacity: loungeOpacity }} x={fo.x} y={L.y + L.h - 52} textAnchor="middle" fontFamily="Poppins" fontWeight="600" fontSize="46" fill="#F4E8E2" fillOpacity="0.8">
+          <motion.text style={{ opacity: loungeOpacity }} x={fo.x} y={L.y + L.h - 52} textAnchor="middle" fontFamily="Poppins" fontWeight="600" fontSize="46" fill="#F4E8E2" fillOpacity="0.9" stroke="#1a0f0c" strokeWidth="8" strokeLinejoin="round" paintOrder="stroke">
             ↓ Front Office · entrance
           </motion.text>
         )}

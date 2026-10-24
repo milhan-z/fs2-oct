@@ -5,7 +5,7 @@ import { useParticipant, useSignOut } from '../../app/participant'
 import { resumeDone } from '../../data/rules'
 import { fmtDeadline, fmtTime } from '../../data/time'
 import { InkIcon } from '../../booklet/icons'
-import { DocLabel, Folio, InkStamp, MRZ, PageSkeleton } from '../../booklet/print'
+import { DocLabel, FadeImg, Folio, InkStamp, MRZ, PageSkeleton } from '../../booklet/print'
 import { setOrigin } from '../../booklet/pages'
 
 export function shortUni(u: string): string {
@@ -46,7 +46,7 @@ export function Passport() {
       {/* identity */}
       <div className="mt-5 grid grid-cols-[104px_1fr] gap-4">
         <button type="button" onClick={() => canRetake && nav('/photo?ulang=1')} aria-label={canRetake ? 'Retake attendance photo' : 'Attendance photo'} className="relative aspect-[3/4] w-full bg-[#2a2f37] shadow-[var(--shadow-contact)]">
-          {p.photo && <img src={p.photo} alt="" className="h-full w-full object-cover" />}
+          {p.photo && <FadeImg src={p.photo} className="h-full w-full object-cover" />}
           {['top-0 left-0 border-t-2 border-l-2', 'top-0 right-0 border-t-2 border-r-2', 'bottom-0 left-0 border-b-2 border-l-2', 'right-0 bottom-0 border-r-2 border-b-2'].map((c) => (
             <span key={c} className={`pointer-events-none absolute h-3 w-3 border-[#8a8f99] ${c}`} aria-hidden="true" />
           ))}

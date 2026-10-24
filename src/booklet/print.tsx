@@ -156,6 +156,12 @@ export function PageSkeleton({ photo = false }: { photo?: boolean }) {
   )
 }
 
+/** A picture that fades in once it has loaded, so late photos never pop in. */
+export function FadeImg({ src, alt = '', className = '' }: { src: string; alt?: string; className?: string }) {
+  const [on, setOn] = useState(false)
+  return <img src={src} alt={alt} onLoad={() => setOn(true)} className={`${className} transition-opacity duration-300 ${on ? 'opacity-100' : 'opacity-0'}`} />
+}
+
 /** Press feedback for buttons: ink darkens / scale .98 within one frame (no bounce). */
 export const press = { whileTap: { scale: 0.98 }, transition: { duration: 0.06 } } as const
 

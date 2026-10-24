@@ -105,6 +105,23 @@ export function supabaseAdapter(): Api {
     }
     return new Map(want.flatMap((p) => (photoCache.has(p) ? [[p, photoCache.get(p)!.url] as const] : [])))
   }
+  const PHOTO_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAAAAACw='
+  const photoBusy = new Map<string, number>() // path → time of the last attempt (no retry storms)
+  function resolvePhotoInBackground(token: string, path: string) {
+    if (Date.now() - (photoBusy.get(path) ?? 0) < 20_000) return
+    photoBusy.set(path, Date.now())
+    photoUrls(token, [path])
+      .then(async () => {
+        const hit = photoCache.get(path)
+        if (!hit) return
+        // decode the picture first, so it fades in from memory instead of loading after the swap
+        const img = new Image()
+        img.src = hit.url
+        await img.decode().catch(() => {})
+        changed()
+      })
+      .catch(() => {})
+  }
   async function withPhotos<T extends { photo?: string | null }>(token: string, rows: T[]): Promise<T[]> {
     const m = await photoUrls(token, rows.map((r) => r.photo)).catch(() => new Map<string, string>())
     return rows.map((r) => ({ ...r, photo: r.photo ? (m.get(r.photo) ?? null) : null }))
@@ -139,8 +156,10 @@ export function supabaseAdapter(): Api {
     },
 
     async login(nrp, pin) {
-      const r = unwrap(await rpc<{ ok: boolean; token: string }>('participant_login', { p_nrp: nrp.trim(), p_pin: pin }))
+      const r = unwrap(await rpc<{ ok: boolean; token: string; photo?: string | null }>('participant_login', { p_nrp: nrp.trim(), p_pin: pin }))
       localStorage.setItem(SESSION_P, r.token)
+      // the photo URL is fetched while the passport state loads, not after it
+      if (r.photo) resolvePhotoInBackground(r.token, r.photo)
     },
 
     async register(input) {
@@ -163,9 +182,15 @@ export function supabaseAdapter(): Api {
       const st = await rpc<MyState>('get_my_state', { p_token: pToken() })
       const path = st.participant.photo
       if (path) {
-        const m = await photoUrls(pToken(), [path]).catch(() => new Map<string, string>())
-        // keep a non-null marker even if the signed URL failed, so the photo gate does not trigger
-        st.participant.photo = m.get(path) ?? 'data:image/gif;base64,R0lGODlhAQABAAAAACw='
+        // The state must not wait for the signed photo URL (a second round trip). Use the cached URL if there is
+        // one, otherwise a non-null placeholder (so the photo gate does not trigger) and fetch the URL in the
+        // background; the app refreshes once when it arrives and the picture fades in.
+        const hit = photoCache.get(path)
+        if (hit && hit.exp > Date.now()) st.participant.photo = hit.url
+        else {
+          st.participant.photo = PHOTO_PLACEHOLDER
+          resolvePhotoInBackground(pToken(), path)
+        }
       }
       return st
     },
