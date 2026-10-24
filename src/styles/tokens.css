@@ -1,0 +1,250 @@
+@import 'tailwindcss';
+
+/* Design tokens — SPEC §6 (GSM FS² October) */
+@theme {
+  --color-bg-0: #0f0709;
+  --color-bg-1: #1a0a0c;
+  --color-glow: #4a1215;
+  --color-panel-0: #3a0f11;
+  --color-panel-1: #6a1a1c;
+  --color-red: #d22b26;
+  --color-red-bright: #e53530;
+  --color-neon: #e82020;
+  --color-yellow: #f9b018;
+  --color-navy: #0d2a4a;
+  --color-navy-2: #102d44;
+  --color-gold: #d8ae54;
+  --color-cream: #f4e8e2;
+  --color-paper: #f6f1e7;
+  --color-muted: #cdbfb8;
+  --color-line: #4a2a2c;
+  --color-ink: #1d2433;
+  --color-ok: #43a047;
+  --color-ok-bright: #7fd18a;
+
+  --color-bulb-red: #e53935;
+  --color-bulb-yellow: #f6c343;
+  --color-bulb-green: #43a047;
+  --color-bulb-blue: #3b5bdb;
+  --color-bulb-teal: #3a9aae;
+  --color-bulb-pink: #ec6fa5;
+
+  --font-sans: 'Poppins', system-ui, sans-serif;
+  --font-serif: 'Libre Baskerville', Georgia, serif;
+  --font-display: 'Anton', Impact, sans-serif;
+  --font-mono: 'Courier Prime', 'Courier New', monospace;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    background: var(--color-bg-0);
+  }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    color: var(--color-cream);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-yellow);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .screen-bg {
+    background: radial-gradient(90% 50% at 50% 35%, #3a0d10 0%, #1a0a0c 55%, #0b1020 100%);
+  }
+  .screen-bg-red {
+    background: radial-gradient(90% 50% at 50% 55%, #4a1215 0%, #1a0a0c 60%, #0f0709 100%);
+  }
+  .panel-red {
+    background: radial-gradient(80% 60% at 50% 45%, #6a1a1c 0%, #3a0f11 75%);
+  }
+  .kicker {
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-yellow);
+  }
+  .field {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 12px;
+    border: 1px solid #3a2a2e;
+    background: #0e1626;
+    color: var(--color-cream);
+    padding: 0 14px;
+    font-size: 16px;
+  }
+  .field:focus {
+    outline: none;
+    border: 2px solid var(--color-yellow);
+  }
+  .field-paper {
+    width: 100%;
+    border-radius: 12px;
+    border: 1.5px solid #d5cabd;
+    background: #fff;
+    color: var(--color-ink);
+    padding: 10px 12px;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+  .field-paper:focus {
+    outline: none;
+    border: 2.5px solid var(--color-navy);
+    box-shadow: 0 0 0 4px rgba(13, 42, 74, 0.12);
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 0 18px;
+    transition: transform 0.12s ease, opacity 0.2s;
+  }
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  .btn-red {
+    background: var(--color-red);
+    color: #fff;
+  }
+  .btn-red-glow {
+    background: #e5322c;
+    color: #fff;
+    box-shadow: 0 0 24px rgba(232, 32, 32, 0.45);
+  }
+  .btn-yellow {
+    background: var(--color-yellow);
+    color: var(--color-navy);
+  }
+  .btn-cream {
+    background: #f4efe4;
+    color: var(--color-navy);
+  }
+  .btn-ghost {
+    border: 1.5px solid #4a3a3e;
+    color: var(--color-cream);
+    font-weight: 600;
+  }
+  .btn-disabled,
+  .btn:disabled {
+    background: #4a3f40;
+    color: #a99a98;
+    box-shadow: none;
+  }
+  /* inside page of the passport: cream security paper with a faint guilloche */
+  .paper-page {
+    background-color: #f6f1e7;
+    background-image:
+      radial-gradient(circle at 50% 0%, rgba(13, 42, 74, 0.06), transparent 55%),
+      repeating-radial-gradient(circle at 85% 12%, transparent 0 11px, rgba(13, 42, 74, 0.045) 11px 12px),
+      repeating-linear-gradient(135deg, transparent 0 18px, rgba(216, 174, 84, 0.07) 18px 19px);
+    color: var(--color-ink);
+  }
+  .field-ink {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 12px;
+    border: 1.5px solid #cdbfa8;
+    background: rgba(255, 255, 255, 0.85);
+    color: var(--color-ink);
+    padding: 0 14px;
+    font-size: 16px;
+  }
+  .field-ink:focus {
+    outline: none;
+    border: 2px solid var(--color-navy);
+    box-shadow: 0 0 0 4px rgba(13, 42, 74, 0.12);
+  }
+  .btn-navy {
+    background: var(--color-navy);
+    color: #fff;
+  }
+  .tape {
+    background: var(--color-navy);
+    color: #fff;
+    font-weight: 700;
+    padding: 4px 10px;
+    transform: rotate(-3deg);
+    display: inline-block;
+  }
+  .neon-text {
+    color: #ffd4cf;
+    text-shadow:
+      0 0 6px rgba(255, 70, 60, 0.9),
+      0 0 18px rgba(232, 32, 32, 0.75),
+      0 0 36px rgba(232, 32, 32, 0.5);
+  }
+  .neon-outline {
+    color: transparent;
+    -webkit-text-stroke: 1.5px #ff4a40;
+    text-shadow:
+      0 0 10px rgba(232, 32, 32, 0.8),
+      0 0 26px rgba(232, 32, 32, 0.55);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}
+
+@keyframes neon-flicker {
+  0%,
+  18%,
+  22%,
+  40%,
+  44%,
+  100% {
+    opacity: 1;
+  }
+  20%,
+  42% {
+    opacity: 0.25;
+  }
+}
+.flicker-once {
+  animation: neon-flicker 1.2s linear 0.6s 1 both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Disabled buttons always look disabled, whatever bg utility they carry. */
+.btn:disabled {
+  background: #4a3f40 !important;
+  color: #a99a98 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}

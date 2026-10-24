@@ -1,0 +1,15 @@
+{
+  "log": [],
+  "notes": {
+    "a1": {
+      "buttons": [
+        "Take photo"
+      ],
+      "fileInput": true,
+      "fileInputVisible": false,
+      "message": "Camera unavailable. Allow camera access, or take a photo with your phone camera.",
+      "afterUseUrl": "http://localhost:5174/photo",
+      "error": []
+    }
+  }
+}

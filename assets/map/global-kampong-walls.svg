@@ -1,0 +1,26 @@
+<!-- Denah Global Kampong (garis tembok saja), diekspor dari Figma FS2 node 1825:984 ("Map (user)" di frame "Denah LSA x ISM October 2026 - A4").
+     Koordinat dipakai juga oleh data/seed.json (titik booth & fasilitas) dalam sistem koordinat viewBox ini.
+     Lounge: x 748–1382, y 2734–4428. Front Office: x 748–1382, y 4428–4936. -->
+<svg width="1834" height="4945" viewBox="0 0 1834 4945" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect x="60.4073" y="4928.46" width="307.291" height="460.455" transform="rotate(-90 60.4073 4928.46)" fill="#FFE797" fill-opacity="0.22" stroke="black" stroke-width="16.8823"/>
+<rect x="60.4073" y="4621.01" width="512.808" height="459.131" transform="rotate(-90 60.4073 4621.01)" fill="#FFE797" fill-opacity="0.22" stroke="black" stroke-width="16.8823"/>
+<path d="M1741.39 11.5859L1809.38 489.599L1809.38 4925.31L71.8275 4925.31L71.8273 836.896L71.8107 836.587L27.587 11.5859L1741.39 11.5859Z" stroke="black" stroke-width="23.1717"/>
+<rect x="60.2474" y="4109.58" width="540.18" height="457.807" transform="rotate(-90 60.2474 4109.58)" fill="#FFE797" fill-opacity="0.22" stroke="black" stroke-width="16.8823"/>
+<rect x="60.2474" y="3569.42" width="540.507" height="457.807" transform="rotate(-90 60.2474 3569.42)" fill="#FFE797" fill-opacity="0.22" stroke="black" stroke-width="16.8823"/>
+<rect x="60.2474" y="3028.9" width="582.135" height="457.807" transform="rotate(-90 60.2474 3028.9)" fill="#FFE797" fill-opacity="0.22" stroke="black" stroke-width="16.8823"/>
+<rect x="60.2474" y="2446.75" width="1200.33" height="457.807" transform="rotate(-90 60.2474 2446.75)" fill="#FFE797" fill-opacity="0.22" stroke="black" stroke-width="16.8823"/>
+<rect x="60.0052" y="1246" width="970" height="458" transform="rotate(-90 60.0052 1246)" fill="#FFE797" fill-opacity="0.22" stroke="black" stroke-width="16.8823"/>
+<rect width="16.5513" height="667.685" transform="matrix(1 -1.81847e-07 -1.83727e-07 -1 731.24 4936.9)" fill="black"/>
+<rect width="16.5513" height="374.651" transform="matrix(1 -1.81847e-07 -1.83727e-07 -1 731.24 4099.74)" fill="black"/>
+<rect width="16.5513" height="374.323" transform="matrix(1 -1.81847e-07 -1.83727e-07 -1 731.24 3610.07)" fill="black"/>
+<rect width="16.5512" height="385.313" transform="matrix(4.32785e-08 1 1 -4.414e-08 739.513 4428.1)" fill="black"/>
+<path d="M1398.11 1246.37L1825.39 1246.37L1825.39 2540.53L1398.11 2540.53L1398.11 2540.55L1825.4 2540.55L1825.4 3339.08L1382.04 3339.08L1382.04 2734.35L782.107 2734.35L782.107 1246.37L1398.11 1246.37Z" fill="#FFE797" fill-opacity="0.22" stroke="black" stroke-width="16.88"/>
+<rect width="92.6869" height="71.7835" rx="6.62049" transform="matrix(1 -1.81847e-07 -1.83727e-07 -1 872.919 3189.19)" fill="black"/>
+<rect width="92.6869" height="71.7835" rx="6.62049" transform="matrix(1 -1.81847e-07 -1.83727e-07 -1 872.919 4181.45)" fill="black"/>
+<path d="M1021.59 829.863L979.187 242.364L1749.86 17.6066C1749.86 17.6066 1783.75 254.519 1797.75 407.134C1812.86 571.816 1822.36 829.863 1822.36 829.863L1021.59 829.863Z" fill="#FFE797" fill-opacity="0.22" stroke="black" stroke-width="16.8823"/>
+<rect x="1024.85" y="1245.44" width="416.279" height="796.114" transform="rotate(-90 1024.85 1245.44)" fill="#FFE797" fill-opacity="0.22" stroke="black" stroke-width="16.8823"/>
+<rect x="1382.04" y="4936.25" width="399.235" height="443.242" transform="rotate(-90 1382.04 4936.25)" fill="#FFE797" fill-opacity="0.22" stroke="black" stroke-width="16.8823"/>
+<rect x="1382.04" y="4537" width="399.562" height="443.242" transform="rotate(-90 1382.04 4537)" fill="#FFE797" fill-opacity="0.22" stroke="black" stroke-width="16.8823"/>
+<rect x="1382.04" y="4137.45" width="399.235" height="443.242" transform="rotate(-90 1382.04 4137.45)" fill="#FFE797" fill-opacity="0.22" stroke="black" stroke-width="16.8823"/>
+<rect x="1382.04" y="3738.22" width="399.235" height="443.242" transform="rotate(-90 1382.04 3738.22)" fill="#FFE797" fill-opacity="0.22" stroke="black" stroke-width="16.8823"/>
+</svg>

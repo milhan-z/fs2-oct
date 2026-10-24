@@ -1,0 +1,224 @@
+{
+  "_catatan": "Data awal. Semua yang bertanda placeholder:true wajib bisa diganti dari panel admin tanpa deploy ulang. Koordinat x/y memakai sistem koordinat assets/map/global-kampong-walls.svg (viewBox 0 0 1834 4945). UI berbahasa Inggris (acara ITS Global Engagement) — teks konten di sini juga Inggris.",
+  "event": {
+    "nama": "From Students For Students (FS²) — Student Booth: Special Edition",
+    "tagline": "Stranger Stories from the Other Side!",
+    "tanggal": "2026-10-28",
+    "jam_acara": "14:00–17:30 WIB",
+    "sesi_booth": {
+      "mulai": "2026-10-28T15:20:00+07:00",
+      "selesai": "2026-10-28T17:20:00+07:00"
+    },
+    "batas_kirim": "2026-10-29T23:59:00+07:00",
+    "tempat": "Global Kampong ITS",
+    "zona_waktu": "Asia/Jakarta",
+    "kontak_bantuan": [
+      {
+        "nama": "Alex",
+        "wa": "https://wa.me/6281649600060"
+      },
+      {
+        "nama": "Cia (Gracia)",
+        "wa": "https://wa.me/6281223903892"
+      }
+    ],
+    "rundown": [
+      {
+        "jam": "14:00",
+        "acara": "Open registration (paper attendance at the Front Office)"
+      },
+      {
+        "jam": "14:30",
+        "acara": "Opening at the Lounge"
+      },
+      {
+        "jam": "14:40",
+        "acara": "Meet the speakers"
+      },
+      {
+        "jam": "15:20",
+        "acara": "Booth session opens (all booths are in the Lounge)"
+      },
+      {
+        "jam": "17:20",
+        "acara": "Closing"
+      }
+    ]
+  },
+  "booths": [
+    {
+      "id": "B1",
+      "slug": "korea",
+      "nama": "South Korea",
+      "region": "Asia",
+      "stamp": "/stamps/stamp-korea.png",
+      "titik": {
+        "x": 930,
+        "y": 2980
+      },
+      "placeholder_posisi": true,
+      "pemateri": [
+        {
+          "nama": "Rahmat Agussalim",
+          "universitas": "Gyeongsang National University (GNU), South Korea",
+          "program": "Student Exchange Spring Semester 2025",
+          "foto": null,
+          "cerita": "Placeholder: Rahmat will share his semester exchange at Gyeongsang National University — from preparing the documents and adapting to classes in Korea to the little things no guidebook mentions.",
+          "placeholder": true
+        }
+      ]
+    },
+    {
+      "id": "B2",
+      "slug": "taiwan",
+      "nama": "Taiwan",
+      "region": "Asia",
+      "stamp": "/stamps/stamp-taiwan.png",
+      "titik": {
+        "x": 1225,
+        "y": 2980
+      },
+      "placeholder_posisi": true,
+      "pemateri": [
+        {
+          "nama": "Tegar Anugrah Firdaus",
+          "universitas": "Taiwan Institute of Sports Science (TISS) / National Sports Science Center",
+          "program": "International Internship Pilot Program",
+          "foto": null,
+          "cerita": "Placeholder: Tegar will talk about the international internship in Taiwan — how he landed the opportunity, what daily life looks like there, and what students should prepare if they want to try the internship route.",
+          "placeholder": true
+        }
+      ]
+    },
+    {
+      "id": "B3",
+      "slug": "germany",
+      "nama": "Germany",
+      "region": "Europe",
+      "stamp": "/stamps/stamp-jerman.png",
+      "titik": {
+        "x": 930,
+        "y": 3600
+      },
+      "placeholder_posisi": true,
+      "pemateri": [
+        {
+          "nama": "Zahrina Nur Amalina Syamsudin",
+          "universitas": "Hochschule Wismar, University of Applied Sciences",
+          "program": "Double Degree Summer Semester Program Hochschule Wismar 2026",
+          "foto": null,
+          "cerita": "Placeholder: Zahrina will walk through her double degree journey at Hochschule Wismar — the selection process, life in a small German town, and tips for surviving the summer semester.",
+          "placeholder": true
+        }
+      ]
+    },
+    {
+      "id": "B4",
+      "slug": "booth-4",
+      "nama": "Booth 4",
+      "region": "TBA",
+      "stamp": null,
+      "titik": {
+        "x": 1225,
+        "y": 3600
+      },
+      "placeholder_posisi": true,
+      "pemateri": [
+        {
+          "nama": "Speaker TBA",
+          "universitas": "TBA",
+          "program": "TBA",
+          "foto": null,
+          "cerita": "Placeholder: details of the fourth booth will be announced by the committee.",
+          "placeholder": true
+        }
+      ]
+    }
+  ],
+  "fasilitas": [
+    {
+      "jenis": "toilet",
+      "label": "Restroom",
+      "titik": {
+        "x": 290,
+        "y": 3840
+      },
+      "placeholder": true,
+      "catatan": "Partnership row, next to the Lounge. Final position TBA."
+    },
+    {
+      "jenis": "musala",
+      "label": "Prayer room",
+      "titik": null,
+      "placeholder": true,
+      "catatan": "Waiting for the committee; hidden while the point is null."
+    }
+  ],
+  "ruang_label": [
+    {
+      "label": "WCU",
+      "x": 290,
+      "y": 520
+    },
+    {
+      "label": "Mobility",
+      "x": 1400,
+      "y": 470
+    },
+    {
+      "label": "Partnership",
+      "x": 290,
+      "y": 1860
+    },
+    {
+      "label": "Lounge",
+      "x": 1065,
+      "y": 3580,
+      "sorot": true,
+      "batas": {
+        "x": 748,
+        "y": 2734,
+        "w": 634,
+        "h": 1694
+      }
+    },
+    {
+      "label": "Front Office",
+      "x": 1065,
+      "y": 4680,
+      "pintu_masuk": {
+        "x": 900,
+        "y": 4740
+      }
+    }
+  ],
+  "feedback": [
+    {
+      "id": "q1",
+      "wajib": true,
+      "tipe": "skala_1_5",
+      "teks": "Overall, how was your FS² experience?",
+      "placeholder": true
+    },
+    {
+      "id": "q2",
+      "wajib": true,
+      "tipe": "skala_1_5",
+      "teks": "How useful were the booth sessions for your study plans?",
+      "placeholder": true
+    },
+    {
+      "id": "q3",
+      "wajib": false,
+      "tipe": "teks",
+      "teks": "Suggestions for the next event",
+      "placeholder": true
+    }
+  ],
+  "departemen_its": "Ambil daftar departemen ITS terbaru dari situs resmi ITS saat build; sediakan opsi 'Lainnya' dengan isian teks.",
+  "aturan": {
+    "jumlah_booth_wajib": 4,
+    "poin_per_resume": 3,
+    "min_kata_per_poin": 5
+  }
+}

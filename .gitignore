@@ -1,0 +1,13 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+.vercel
+test-results
+playwright-report
+*.local
+# audit recordings are large; keep only screens + contact sheets in git
+docs/audit/**/frames/
+docs/audit/**/video/
+.claude/

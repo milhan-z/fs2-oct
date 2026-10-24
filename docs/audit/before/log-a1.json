@@ -1,0 +1,16 @@
+{
+  "log": [],
+  "notes": {
+    "a1": {
+      "buttons": [
+        "Take photo",
+        "DEV"
+      ],
+      "fileInput": true,
+      "fileInputVisible": false,
+      "message": "Camera unavailable. Allow camera access, or take a photo with your phone camera.",
+      "afterUseUrl": "http://localhost:5173/onboarding",
+      "error": []
+    }
+  }
+}

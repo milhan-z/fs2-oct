@@ -1,0 +1,9 @@
+{
+  "name": "FS² Digital Passport",
+  "short_name": "Paspor FS²",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F0709",
+  "theme_color": "#0F0709",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

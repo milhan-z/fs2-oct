@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Masuk atau buat paspor</title>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Libre+Baskerville:ital,wght@0,700;1,400&amp;family=Poppins:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#F9B018}a:hover{color:#ffd166}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: radial-gradient(80% 35% at 50% 0%, rgba(232,32,32,0.25) 0%, rgba(232,32,32,0) 70%), linear-gradient(180deg, #120809 0%, #0A1424 100%); font-family: Poppins, sans-serif; color: #F4E8E2; display: flex; flex-direction: column; padding: 10px 20px 22px; gap: 13px; overflow: hidden">
+  <a href="Main.dc.html" aria-label="Kembali" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; margin-left: -10px; color: #F4E8E2">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+  </a>
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <div style="font-family: Anton, sans-serif; font-size: 14px; letter-spacing: 2px; color: #F9B018">PASPOR BARU</div>
+    <div style="font-family: Poppins, sans-serif; font-weight: 800; font-size: 28px; line-height: 1.15; color: #ffffff">Buat paspormu</div>
+    <div style="font-size: 13px; color: #cdbfb8">NRP ini belum punya paspor. Isi sekali saja, lalu buat PIN.</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <label for="nrp" style="font-size: 13px; font-weight: 600">NRP</label>
+    <input id="nrp" value="5025240028" inputmode="numeric" style="height: 50px; box-sizing: border-box; padding: 0 14px; border-radius: 12px; border: 1.5px solid #3a2a2c; background: #0d1626; color: #F4E8E2; font-family: Poppins, sans-serif; font-size: 16px">
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <label for="nama" style="font-size: 13px; font-weight: 600">Nama lengkap</label>
+    <input id="nama" value="Peserta Demo" style="height: 50px; box-sizing: border-box; padding: 0 14px; border-radius: 12px; border: 1.5px solid #3a2a2c; background: #0d1626; color: #F4E8E2; font-family: Poppins, sans-serif; font-size: 16px">
+  </div>
+  <div style="display: flex; gap: 12px">
+    <div style="flex: 2; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+      <label for="dept" style="font-size: 13px; font-weight: 600">Departemen</label>
+      <select id="dept" style="height: 50px; width: 100%; box-sizing: border-box; padding: 0 10px; border-radius: 12px; border: 1.5px solid #3a2a2c; background: #0d1626; color: #F4E8E2; font-family: Poppins, sans-serif; font-size: 16px"><option>Teknik Informatika</option></select>
+    </div>
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+      <label for="angkatan" style="font-size: 13px; font-weight: 600">Angkatan</label>
+      <select id="angkatan" style="height: 50px; width: 100%; box-sizing: border-box; padding: 0 10px; border-radius: 12px; border: 1.5px solid #3a2a2c; background: #0d1626; color: #F4E8E2; font-family: Poppins, sans-serif; font-size: 16px"><option>2024</option></select>
+    </div>
+  </div>
+  <div style="display: flex; gap: 12px">
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+      <label for="pin" style="font-size: 13px; font-weight: 600">PIN 4 angka</label>
+      <input id="pin" type="password" value="1234" inputmode="numeric" style="height: 50px; width: 100%; box-sizing: border-box; padding: 0 14px; border-radius: 12px; border: 1.5px solid #3a2a2c; background: #0d1626; color: #F4E8E2; font-size: 20px; letter-spacing: 8px">
+    </div>
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+      <label for="pin2" style="font-size: 13px; font-weight: 600">Ulangi PIN</label>
+      <input id="pin2" type="password" value="12" inputmode="numeric" style="height: 50px; width: 100%; box-sizing: border-box; padding: 0 14px; border-radius: 12px; border: 2px solid #F9B018; background: #0d1626; color: #F4E8E2; font-size: 20px; letter-spacing: 8px">
+    </div>
+  </div>
+  <div style="font-size: 12px; color: #cdbfb8">Lupa PIN nanti? Minta reset di Front Office.</div>
+
+  <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px">
+    <a href="Foto.dc.html" style="display: flex; height: 54px; align-items: center; justify-content: center; border-radius: 12px; background: #D22B26; color: #ffffff; font-weight: 700; font-size: 16px; text-decoration: none">Buat paspor</a>
+    <div style="font-size: 12px; color: #9d918b; text-align: center">Sudah punya paspor? Cukup isi NRP + PIN.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
