@@ -363,6 +363,8 @@ export const mockAdapter: Api = {
     return myState(requireParticipant())
   },
 
+  prepareUpload() {},
+
   async uploadPhoto(file) {
     const p = requireParticipant()
     const url = await shrinkImage(file)

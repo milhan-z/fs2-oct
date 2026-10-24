@@ -35,7 +35,15 @@ async function samplePhoto(): Promise<Blob> {
   return new Promise((r) => c.toBlob((b) => r(b!), 'image/jpeg', 0.9))
 }
 
-type Shot = { url: string; blob: Blob }
+/** `ready` is the compressed copy, started the moment the picture is taken so "Use this photo" never waits for it */
+type Shot = { url: string; blob: Blob; ready?: Promise<Blob> }
+
+async function compress(blob: Blob): Promise<Blob> {
+  const file = new File([blob], 'kehadiran.jpg', { type: blob.type || 'image/jpeg' })
+  const { default: imageCompression } = await import('browser-image-compression')
+  return imageCompression(file, { maxWidthOrHeight: 720, initialQuality: 0.7, maxSizeMB: 0.25, useWebWorker: false, fileType: 'image/jpeg' })
+}
+const makeShot = (blob: Blob): Shot => ({ url: URL.createObjectURL(blob), blob, ready: compress(blob) })
 
 /**
  * P2 — the identity page. The photo box starts empty; a polaroid camera pops out of it, takes the
@@ -47,7 +55,7 @@ export function Photo() {
   const [params] = useSearchParams()
   const retake = params.has('ulang')
   const reduce = useReducedMotion()
-  const { state, reload } = useParticipant()
+  const { state, reload, setState } = useParticipant()
   const signOut = useSignOut()
   const boxRef = useRef<HTMLButtonElement>(null)
   const [camOpen, setCamOpen] = useState(false)
@@ -65,13 +73,11 @@ export function Photo() {
     setBusy(true)
     setErr('')
     try {
-      const file = new File([shot.blob], 'kehadiran.jpg', { type: shot.blob.type || 'image/jpeg' })
-      const { default: imageCompression } = await import('browser-image-compression')
-      const small = await imageCompression(file, { maxWidthOrHeight: 720, initialQuality: 0.7, maxSizeMB: 0.25, useWebWorker: false, fileType: 'image/jpeg' })
-      await api.uploadPhoto(small)
-      await reload()
-      // let the MRZ finish typing before turning the page
-      await new Promise((r) => setTimeout(r, reduce ? 0 : 700))
+      const small = await (shot.ready ?? compress(shot.blob))
+      const local = await api.uploadPhoto(small)
+      // go on at once: the passport already knows its photo, the fresh state follows in the background
+      if (state) setState({ ...state, participant: { ...state.participant, photo: local || shot.url } })
+      void reload()
       const onboarded = state ? localStorage.getItem(onboardedKey(state.participant.id)) : null
       nav(retake ? '/passport' : onboarded ? '/map' : '/onboarding', { replace: true })
     } catch (e) {
@@ -218,6 +224,7 @@ function PolaroidCamera({ boxRef, name, onClose, onUse }: { boxRef: React.RefObj
   const alive = useRef(true)
   useEffect(() => {
     alive.current = true
+    api.prepareUpload() // the signed upload URL is requested while the camera is still open
     return () => {
       alive.current = false
     }
@@ -316,14 +323,14 @@ function PolaroidCamera({ boxRef, name, onClose, onUse }: { boxRef: React.RefObj
     }
     ctx.drawImage(v, (vw - w) / 2, (vh - h) / 2, w, h, 0, 0, c.width, c.height)
     const blob = await new Promise<Blob>((r) => c.toBlob((b) => r(b!), 'image/jpeg', 0.9))
-    setShot({ url: URL.createObjectURL(blob), blob })
+    setShot(makeShot(blob))
     stop()
   }
 
   const acceptFile = (f: File | Blob | undefined) => {
     if (!f) return
     setCamError('')
-    setShot({ url: URL.createObjectURL(f), blob: f })
+    setShot(makeShot(f))
     stop()
   }
 

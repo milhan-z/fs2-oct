@@ -78,7 +78,8 @@ export function supabaseAdapter(): Api {
 
   // --- attendance photos: private bucket, short-lived signed URLs (cached across reloads) ---
   const PHOTO_CACHE = 'fs2.cache.photoUrls'
-  const photoCache = new Map<string, { url: string; exp: number }>(
+  let early: { at: number; p: Promise<UploadSlot | null> } | null = null
+  const photoCache = new Map<string, { url: string; exp: number; local?: boolean }>(
     (() => {
       try {
         return Object.entries(JSON.parse(localStorage.getItem(PHOTO_CACHE) ?? '{}') as Record<string, { url: string; exp: number }>).filter(([, v]) => v.exp > Date.now())
@@ -89,7 +90,8 @@ export function supabaseAdapter(): Api {
   )
   const persistPhotos = () => {
     try {
-      localStorage.setItem(PHOTO_CACHE, JSON.stringify(Object.fromEntries([...photoCache].filter(([, v]) => v.exp > Date.now()).slice(-300))))
+      // pictures that only exist in this page (blob URLs) must not outlive it
+      localStorage.setItem(PHOTO_CACHE, JSON.stringify(Object.fromEntries([...photoCache].filter(([, v]) => v.exp > Date.now() && !v.local).slice(-300))))
     } catch {
       /* storage full — the in-memory cache still works */
     }
@@ -127,8 +129,10 @@ export function supabaseAdapter(): Api {
     return rows.map((r) => ({ ...r, photo: r.photo ? (m.get(r.photo) ?? null) : null }))
   }
 
-  async function signedUpload(body: Record<string, unknown>, bucket: string, file: Blob, contentType: string) {
-    const data = await invoke<{ path: string; uploadToken: string; publicUrl?: string; error?: string; message?: string }>('photo-upload-url', body)
+  type UploadSlot = { path: string; uploadToken: string; publicUrl?: string; error?: string; message?: string }
+  async function signedUpload(body: Record<string, unknown>, bucket: string, file: Blob, contentType: string, early?: Promise<UploadSlot | null>) {
+    let data = early ? await early : null
+    if (!data?.path) data = await invoke<UploadSlot>('photo-upload-url', body)
     if (!data?.path) throw new ApiError('upload', 'Could not prepare the upload. Please try again.')
     // same request supabase-js storage.uploadToSignedUrl() makes
     const form = new FormData()
@@ -201,12 +205,23 @@ export function supabaseAdapter(): Api {
       return st
     },
 
+    // The Edge Function that hands out the signed upload URL can start cold (seconds), so it is called as soon as the
+    // camera opens; by the time the photo is accepted the URL is usually ready.
+    prepareUpload() {
+      if (early && Date.now() - early.at < 10 * 60_000) return
+      early = { at: Date.now(), p: invoke<UploadSlot>('photo-upload-url', { token: pToken(), kind: 'attendance' }).catch(() => null) }
+    },
+
     async uploadPhoto(file) {
-      const d = await signedUpload({ token: pToken(), kind: 'attendance' }, 'attendance-photos', file, 'image/jpeg')
+      const pre = early && Date.now() - early.at < 10 * 60_000 ? early.p : undefined
+      early = null
+      const d = await signedUpload({ token: pToken(), kind: 'attendance' }, 'attendance-photos', file, 'image/jpeg', pre)
       await rpc('set_photo', { p_token: pToken(), p_path: d.path })
-      photoCache.delete(d.path)
+      // the picture is already on this phone: show it right away instead of waiting for a signed view URL
+      const local = URL.createObjectURL(file)
+      photoCache.set(d.path, { url: local, exp: Date.now() + 20 * 60_000, local: true })
       changed()
-      return (await photoUrls(pToken(), [d.path])).get(d.path) ?? ''
+      return local
     },
 
     async saveResume(boothId, poin) {

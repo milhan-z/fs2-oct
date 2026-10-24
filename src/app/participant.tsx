@@ -59,7 +59,10 @@ export function ParticipantProvider({ children }: { children: ReactNode }) {
 
   // cache the last state so pages render at once on the next load (A3)
   useEffect(() => {
-    if (state) localStorage.setItem(STATE_CACHE, JSON.stringify(state))
+    if (!state) return
+    // a picture that only exists in this page (blob URL) must not be cached: keep a placeholder so the photo gate holds
+    const photo = state.participant.photo?.startsWith('blob:') ? 'data:image/gif;base64,R0lGODlhAQABAAAAACw=' : state.participant.photo
+    localStorage.setItem(STATE_CACHE, JSON.stringify({ ...state, participant: { ...state.participant, photo } }))
   }, [state])
 
   useEffect(() => {

@@ -39,6 +39,8 @@ export interface Api {
   hasSession(): boolean
   logout(): void
   getMyState(): Promise<MyState>
+  /** warms the upload while the camera is still open (the signed upload URL is requested early) */
+  prepareUpload(): void
   uploadPhoto(file: Blob): Promise<string>
   saveResume(boothId: string, poin: [string, string, string]): Promise<string>
   saveFeedback(answers: Answer[]): Promise<void>
