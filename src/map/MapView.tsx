@@ -121,6 +121,7 @@ export function MapView({ mode, booths, facilities, rooms, status, onPin, onLoun
             return (
               <motion.g
                 key={b.id}
+                data-tour={b.id === booths[0]?.id ? 'pin' : undefined}
                 role="button"
                 tabIndex={mode === 'lounge' ? 0 : -1}
                 aria-label={`${b.nama} booth: ${st === 'none' ? 'not stamped yet' : st === 'stamped' ? 'stamped' : 'notes done'}`}

@@ -82,6 +82,7 @@ try {
   await transition('t07-onboarding-to-map', () => page.getByRole('button', { name: 'Start' }).click(), 900)
   await wait(400)
   await screen('07-map')
+  await page.getByRole('button', { name: 'Skip tour' }).click({ timeout: 5000 }).catch(() => {})
   await transition('t08-map-lounge-to-building', () => page.getByRole('tab', { name: 'Whole building' }).click(), 700)
   await screen('08-map-building')
   await page.getByRole('tab', { name: 'Lounge' }).click()

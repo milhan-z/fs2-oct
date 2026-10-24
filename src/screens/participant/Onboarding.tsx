@@ -6,6 +6,7 @@ import { LightString } from '../../components/ChristmasLights'
 import { CAM_BUILDING, LOUNGE_BOUNDS, WALLS_INNER, cameraTransform, viewBoxOf, type Rect } from '../../map/geometry'
 import { boothCode, TicketPaper } from '../../booklet/print'
 import { useParticipant } from '../../app/participant'
+import { startTour } from '../../booklet/CoachTour'
 import { onboardedKey } from './Photo'
 
 // a) lights  b) silhouette  c) plan draws  d) zoom to Lounge  e) pins drop  f) note
@@ -54,7 +55,11 @@ export function Onboarding() {
   }, [])
 
   const finish = () => {
-    if (state) localStorage.setItem(onboardedKey(state.participant.id), '1')
+    if (state) {
+      const first = !localStorage.getItem(onboardedKey(state.participant.id))
+      localStorage.setItem(onboardedKey(state.participant.id), '1')
+      if (first) startTour(state.participant.id) // the button tour follows the intro, once per passport
+    }
     nav('/map', { replace: true })
   }
 

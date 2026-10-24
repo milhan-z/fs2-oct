@@ -98,6 +98,7 @@ try {
     if (page.url().includes('onboarding')) await page.getByRole('button', { name: 'Skip' }).click()
   }
   await page.waitForURL('**/map')
+  await page.getByRole('button', { name: 'Skip tour' }).click({ timeout: 5000 }).catch(() => {})
   await wait(800)
   await shot(page, '01-peta')
   await page.getByRole('button', { name: 'QR', exact: true }).click()

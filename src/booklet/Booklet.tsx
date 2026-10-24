@@ -12,6 +12,7 @@ import { Login } from '../screens/participant/Login'
 import { CoverFooter, CoverScenery } from '../screens/participant/Cover'
 import { PageSkeleton } from './print'
 import { GrowSheet } from './GrowSheet'
+import { CoachTour } from './CoachTour'
 
 // The cover and sign-in page ship in the first bundle; every other page loads on demand and shows
 // a printed page skeleton meanwhile (no spinner).
@@ -248,6 +249,7 @@ export function Booklet() {
               <LightString lit={stamped} count={total} justLit={justLit} celebrate={celebrate} className="h-full w-full" label={`${stamped} of ${total} stamped`} />
             </div>
           )}
+          {key === 'map' && !raw.overlay && <CoachTour />}
           <IndexTabs active={raw.overlay?.kind === 'qr' ? 'qr' : key === 'map' ? 'map' : 'passport'} qrOpen={raw.overlay?.kind === 'qr'} />
         </>
       )}
@@ -394,6 +396,7 @@ function IndexTabs({ active, qrOpen }: { active: 'map' | 'qr' | 'passport'; qrOp
           }
           nav(to)
         }}
+        data-tour={`tab-${id}`}
         aria-current={on ? 'page' : undefined}
         whileTap={{ scale: 0.97 }}
         transition={{ duration: 0.06 }}

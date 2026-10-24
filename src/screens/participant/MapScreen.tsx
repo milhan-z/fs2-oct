@@ -78,7 +78,7 @@ export function MapScreen() {
         </p>
       </div>
 
-      <button type="button" onClick={(e) => (setOrigin(e.currentTarget), nav(next.to))} className="mx-3 mt-4 flex items-center gap-2 text-left">
+      <button type="button" data-tour="next" onClick={(e) => (setOrigin(e.currentTarget), nav(next.to))} className="mx-3 mt-4 flex items-center gap-2 text-left">
         <Tape className="flex-none text-[12px]">Next up</Tape>
         <span className="bg-yellow px-2.5 py-1 text-[14px] leading-tight font-semibold text-navy shadow-[var(--shadow-contact)]">{next.label}</span>
       </button>

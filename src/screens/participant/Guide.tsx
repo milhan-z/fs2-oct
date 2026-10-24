@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useContent } from '../../app/providers'
 import { api } from '../../data/api'
-import { useSignOut } from '../../app/participant'
+import { useParticipant, useSignOut } from '../../app/participant'
+import { startTour } from '../../booklet/CoachTour'
 import { LogoStrip } from '../../components/decor'
 import { fmtDeadline, fmtTime } from '../../data/time'
 import { setSoundEnabled, soundEnabled, sfx } from '../../app/sound'
@@ -16,6 +17,7 @@ export function Guide() {
   const [sound, setSound] = useState(soundEnabled())
   const [playing, setPlaying] = useState(false)
   const signOut = useSignOut()
+  const { state } = useParticipant()
   if (!content) return <PageSkeleton />
   const { rules, settings, event } = content
   const loggedIn = api.hasSession()
@@ -120,6 +122,18 @@ export function Guide() {
         {loggedIn && (
           <button type="button" className="min-h-12 border-b border-ink/15 text-left text-[15px] font-semibold" onClick={() => nav('/onboarding')}>
             Replay the map intro
+          </button>
+        )}
+        {loggedIn && state && (
+          <button
+            type="button"
+            className="min-h-12 border-b border-ink/15 text-left text-[15px] font-semibold"
+            onClick={() => {
+              startTour(state.participant.id)
+              nav('/map')
+            }}
+          >
+            Replay the button tour
           </button>
         )}
         <button type="button" role="switch" aria-checked={sound} onClick={toggleSound} className="flex min-h-12 items-center justify-between border-b border-ink/15 text-[15px]">
