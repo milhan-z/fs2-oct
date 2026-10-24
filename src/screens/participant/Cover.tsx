@@ -1,81 +1,112 @@
 import { motion, useReducedMotion } from 'motion/react'
-import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { BigLights } from '../../components/ChristmasLights'
-import { DemogorgonFlower, LogoStrip, PassportCover } from '../../components/decor'
+import { DemogorgonFlower, LogoStrip } from '../../components/decor'
 import { useContent } from '../../app/providers'
-import { api } from '../../data/api'
 import { fmtDay } from '../../data/time'
-import { EASE_OUT } from '../../motion/presets'
 
 /**
- * P0 — cinematic passport cover, always one screen (no scroll).
- * "Open Passport" swings the cover open on its left hinge (MOTION #1) and reveals the inside
- * paper page, which then grows into the sign-in page (shared layoutId "passport-page").
+ * The night around the closed passport, built from the GSM kit: partner logos printed at the top,
+ * a pine forest with drifting smoke along the bottom, Demogorgon flowers in the dark and a red
+ * glow leaking from below. Everything sits behind the book (z-0) and never on paper.
  */
-export function Cover() {
+export function CoverScenery() {
+  const reduce = useReducedMotion()
+  const pines = [
+    { h: 150, x: '-6%', o: 0.55 },
+    { h: 210, x: '8%', o: 0.75 },
+    { h: 170, x: '22%', o: 0.6 },
+    { h: 240, x: '38%', o: 0.8 },
+    { h: 180, x: '55%', o: 0.65 },
+    { h: 225, x: '70%', o: 0.8 },
+    { h: 160, x: '86%', o: 0.6 },
+  ]
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+      {/* partner logos, printed at the top like the GSM header */}
+      <div className="absolute inset-x-0 top-2 flex justify-center px-6">
+        <LogoStrip className="w-full max-w-[300px] rounded-[2px] px-3 py-1 opacity-95" />
+      </div>
+
+      {/* clouds, a red Upside Down glow on the horizon, the town skyline and the forest */}
+      <img src="/assets/gsm/clouds.svg" alt="" className="absolute inset-x-0 top-[14%] w-full opacity-[0.07]" />
+      <img src="/assets/gsm/clouds.svg" alt="" className="absolute inset-x-0 bottom-[60px] w-full opacity-[0.12]" />
+      <div className="absolute inset-x-[-20%] bottom-[40px] h-[220px] bg-[radial-gradient(ellipse_at_50%_100%,rgba(179,38,30,.38),rgba(179,38,30,.1)_45%,transparent_70%)]" />
+      <img src="/assets/gsm/skyline.svg" alt="" className="absolute inset-x-0 bottom-[70px] w-full opacity-[0.22] brightness-50" />
+      <div className="absolute inset-x-0 bottom-0 h-[260px]">
+        {pines.map((p, i) => (
+          <img key={i} src="/assets/gsm/pine.webp" alt="" className="absolute bottom-0 w-auto brightness-[0.18] saturate-50" style={{ height: p.h, left: p.x, opacity: p.o }} />
+        ))}
+        {/* ground fog */}
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#120a0b] via-[#120a0b]/80 to-transparent" />
+      </div>
+
+      {/* drifting smoke */}
+      {[
+        { src: '/assets/gsm/smoke1.svg', cls: 'left-[-4%] bottom-[90px] w-[34%]', d: 0 },
+        { src: '/assets/gsm/smoke2.svg', cls: 'right-[-6%] bottom-[70px] w-[38%]', d: 3 },
+      ].map((s) => (
+        <motion.img
+          key={s.src}
+          src={s.src}
+          alt=""
+          className={`absolute opacity-[0.1] ${s.cls}`}
+          animate={reduce ? undefined : { y: [0, -18, 0], opacity: [0.08, 0.14, 0.08] }}
+          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: s.d }}
+        />
+      ))}
+
+      {/* spores drifting up */}
+      {!reduce &&
+        Array.from({ length: 14 }, (_, i) => (
+          <motion.span
+            key={i}
+            className="absolute h-[3px] w-[3px] rounded-full bg-[#f3ebdd]"
+            style={{ left: `${(i * 37) % 100}%`, bottom: `${8 + ((i * 23) % 40)}%` }}
+            animate={{ y: [0, -60 - (i % 4) * 20], x: [0, i % 2 ? 10 : -10], opacity: [0, 0.55, 0] }}
+            transition={{ duration: 7 + (i % 5), repeat: Infinity, delay: i * 0.6, ease: 'easeOut' }}
+          />
+        ))}
+
+      {/* Demogorgon flowers growing out of the dark */}
+      <DemogorgonFlower size={88} rotate={-18} className="absolute bottom-[118px] -left-6 opacity-90" />
+      <DemogorgonFlower size={54} rotate={24} className="absolute right-[-14px] bottom-[190px] opacity-80" />
+      <DemogorgonFlower size={38} rotate={8} className="absolute top-[38%] -right-3 opacity-60" />
+      <DemogorgonFlower size={30} rotate={-30} className="absolute top-[22%] -left-2 opacity-50" />
+      <DemogorgonFlower size={64} rotate={12} className="absolute right-[18%] bottom-[150px] opacity-75" />
+      <DemogorgonFlower size={42} rotate={-12} className="absolute bottom-[175px] left-[24%] opacity-60" />
+      <DemogorgonFlower size={26} rotate={40} className="absolute top-[52%] left-[6%] opacity-45" />
+    </div>
+  )
+}
+
+/**
+ * P0 footer — what lies on the table next to the closed passport: date, venue and the two
+ * actions. "Open Passport" opens the cover onto the live sign-in page (MOTION #1). One screen.
+ */
+export function CoverFooter({ onOpen }: { onOpen: () => void }) {
   const { content } = useContent()
   const nav = useNavigate()
-  const reduce = useReducedMotion()
-  const [opening, setOpening] = useState(false)
-
-  const open = () => {
-    if (opening) return
-    setOpening(true)
-    const next = api.hasSession() ? '/map' : '/signin'
-    setTimeout(() => nav(next), reduce ? 0 : 700)
-  }
-
   const tanggal = content ? fmtDay(`${content.event.tanggal}T12:00:00+07:00`) : ''
   const jam = content?.event.jam_acara.replace('–', ' – ') ?? ''
 
   return (
-    <main className="relative flex h-dvh flex-col overflow-hidden px-6 pt-3 pb-[max(16px,env(safe-area-inset-bottom))]" style={{ background: 'radial-gradient(70% 40% at 50% 30%, #2a0e12 0%, #12080a 60%, #0b0d16 100%)' }}>
-      <BigLights lit={4} sequence className="mx-auto w-full max-w-[300px] flex-none" />
-      <DemogorgonFlower size={56} rotate={14} className="pointer-events-none absolute top-[48%] -left-4 opacity-80" />
-
-      {/* the book: sized by the space left over, never causes scrolling */}
-      <div className="flex min-h-0 flex-1 items-center justify-center py-2 [container-type:size]">
-        <div className="relative aspect-[3/4] w-[min(290px,100cqw,75cqh)]" style={{ perspective: 1200 }}>
-          {/* inside page, revealed when the cover opens */}
-          <motion.div layoutId="passport-page" className="paper-page absolute inset-0 overflow-hidden rounded-[3%_6%_6%_3%]" transition={{ duration: 0.55, ease: EASE_OUT }}>
-            <div className="flex h-full flex-col p-[9%] text-navy">
-              <p className="font-mono text-[11px] font-bold tracking-[0.35em]">PASSPORT · FS²</p>
-              <p className="mt-2 font-serif text-[15px] font-bold">Identity page</p>
-              <div className="mt-auto space-y-2 opacity-40" aria-hidden="true">
-                <div className="h-2 w-3/4 rounded bg-navy/30" />
-                <div className="h-2 w-1/2 rounded bg-navy/30" />
-              </div>
-            </div>
-          </motion.div>
-          <motion.div
-            className="absolute inset-0"
-            style={{ transformOrigin: 'left center', transformStyle: 'preserve-3d', backfaceVisibility: 'hidden' }}
-            initial={{ opacity: 0, y: 16 }}
-            animate={opening ? { rotateY: -165, opacity: [1, 1, 0] } : { opacity: 1, y: 0, rotateY: 0 }}
-            transition={opening ? { duration: 0.65, ease: [0.55, 0, 0.6, 1], times: [0, 0.8, 1] } : { duration: 0.7, ease: EASE_OUT, delay: 0.2 }}
-          >
-            <PassportCover tagline={content?.event.tagline ?? 'Stranger Stories from the Other Side!'} />
-          </motion.div>
-        </div>
-      </div>
-
-      <motion.div className="flex-none text-center" animate={{ opacity: opening ? 0 : 1 }} transition={{ duration: 0.2 }}>
-        <p className="text-[15px] font-bold text-cream">{tanggal}</p>
-        <p className="mt-0.5 text-[13px] text-muted">
-          {jam} · {content?.event.tempat}
-        </p>
-      </motion.div>
-
-      <motion.div className="mt-4 flex flex-none flex-col gap-2.5" animate={{ opacity: opening ? 0 : 1 }} transition={{ duration: 0.2 }}>
-        <button type="button" onClick={open} className="btn btn-red-glow w-full">
-          Open Passport
-        </button>
-        <button type="button" onClick={() => nav('/guide')} className="btn btn-ghost w-full">
-          How it works
-        </button>
-        <LogoStrip className="mx-auto mt-1 w-full max-w-[280px] py-1" />
-      </motion.div>
-    </main>
+    <motion.div
+      className="absolute inset-x-0 bottom-0 z-[4] px-6 pb-[max(14px,env(safe-area-inset-bottom))]"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, transition: { duration: 0.15 } }}
+      transition={{ duration: 0.4, delay: 0.5 }}
+    >
+      <p className="text-[15px] font-semibold text-cream">{tanggal}</p>
+      <p className="mt-0.5 text-[13px] text-cream/75">
+        {jam} · {content?.event.tempat}
+      </p>
+      <motion.button type="button" onClick={onOpen} whileTap={{ scale: 0.98 }} transition={{ duration: 0.06 }} className="btn btn-primary mt-4 w-full">
+        Open Passport
+      </motion.button>
+      <button type="button" onClick={() => nav('/guide')} className="mt-1 min-h-11 text-[14px] text-cream/85 underline decoration-cream/30 underline-offset-4">
+        How it works
+      </button>
+    </motion.div>
   )
 }

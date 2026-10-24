@@ -1,33 +1,207 @@
 import { AnimatePresence, motion, useAnimate, useReducedMotion } from 'motion/react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router'
-import { api } from '../../data/api'
+import { api, isMock } from '../../data/api'
 import { useParticipant } from '../../app/participant'
-import { Icon } from '../../components/decor'
-import { ErrorText, Spinner } from '../../components/ui'
+import { ErrorText } from '../../components/ui'
 import { sfx, vibrate } from '../../app/sound'
-import { EASE_OUT } from '../../motion/presets'
+import { InkIcon } from '../../booklet/icons'
+import { DocLabel, Folio, MRZ, PageNo, PageSkeleton } from '../../booklet/print'
 
-const ONBOARDED_KEY = 'fs2.onboarded'
+export const ONBOARDED_KEY = 'fs2.onboarded'
 
-/** P2 — attendance selfie in a polaroid frame (MOTION #3). */
+/** Draws a neutral sample portrait (mock mode only) so demos work without a camera. */
+async function samplePhoto(): Promise<Blob> {
+  const c = document.createElement('canvas')
+  c.width = 540
+  c.height = 720
+  const g = c.getContext('2d')!
+  const bg = g.createLinearGradient(0, 0, 0, 720)
+  bg.addColorStop(0, '#7d8794')
+  bg.addColorStop(1, '#4a525e')
+  g.fillStyle = bg
+  g.fillRect(0, 0, 540, 720)
+  g.fillStyle = '#e9d8c6'
+  g.beginPath()
+  g.ellipse(270, 300, 120, 150, 0, 0, Math.PI * 2)
+  g.fill()
+  g.fillStyle = '#23324a'
+  g.beginPath()
+  g.ellipse(270, 760, 300, 280, 0, Math.PI, 0)
+  g.fill()
+  return new Promise((r) => c.toBlob((b) => r(b!), 'image/jpeg', 0.9))
+}
+
+type Shot = { url: string; blob: Blob }
+
+/**
+ * P2 — the identity page. The photo box starts empty; a polaroid camera pops out of it, takes the
+ * picture, and on "Use this photo" the polaroid flies back and is pasted into the box. Then the
+ * MRZ types itself out and the photo is saved (MOTION #3, C2).
+ */
 export function Photo() {
   const nav = useNavigate()
   const [params] = useSearchParams()
   const retake = params.has('ulang')
   const reduce = useReducedMotion()
   const { state, reload } = useParticipant()
+  const boxRef = useRef<HTMLButtonElement>(null)
+  const [camOpen, setCamOpen] = useState(false)
+  const [pasted, setPasted] = useState<Shot | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+
+  // the camera pops out on its own once the page has settled
+  useEffect(() => {
+    const t = setTimeout(() => setCamOpen(true), reduce ? 0 : 650)
+    return () => clearTimeout(t)
+  }, [reduce])
+
+  const save = async (shot: Shot) => {
+    setBusy(true)
+    setErr('')
+    try {
+      const file = new File([shot.blob], 'kehadiran.jpg', { type: shot.blob.type || 'image/jpeg' })
+      const { default: imageCompression } = await import('browser-image-compression')
+      const small = await imageCompression(file, { maxWidthOrHeight: 720, initialQuality: 0.7, maxSizeMB: 0.25, useWebWorker: false, fileType: 'image/jpeg' })
+      await api.uploadPhoto(small)
+      await reload()
+      // let the MRZ finish typing before turning the page
+      await new Promise((r) => setTimeout(r, reduce ? 0 : 700))
+      const onboarded = localStorage.getItem(ONBOARDED_KEY)
+      nav(retake ? '/passport' : onboarded ? '/map' : '/onboarding', { replace: true })
+    } catch (e) {
+      setErr((e as Error).message || 'Could not save the photo. Please try again.')
+      setBusy(false)
+    }
+  }
+
+  const onPasted = (shot: Shot) => {
+    setCamOpen(false)
+    setPasted(shot)
+    vibrate(15)
+    save(shot)
+  }
+
+  if (!state) return <PageSkeleton photo />
+  const p = state.participant
+  const photo = pasted?.url ?? (retake ? undefined : p.photo)
+
+  return (
+    <div className="relative flex min-h-full flex-col px-6 pt-4 pb-10">
+      <Folio left="Passport · FS²" serial={`FS2-${p.nrpLast4}`} />
+      <p className="mt-6 text-[13px] text-[#8a5a12] italic">Step 1 · Before the booths</p>
+      <h1 className="page-title mt-1">Attendance photo</h1>
+      <p className="mt-2 text-[15px] leading-[22px] text-ink/75">One photo for your identity page — proof that you crossed over to FS². Booth officers check it before they stamp your visa.</p>
+
+      {/* identity block */}
+      <div className="mt-8 grid grid-cols-[136px_1fr] gap-5">
+        <div>
+          <motion.button
+            ref={boxRef}
+            type="button"
+            onClick={() => !busy && setCamOpen(true)}
+            disabled={busy}
+            aria-label={photo ? 'Retake attendance photo' : 'Open camera'}
+            className="relative block aspect-[3/4] w-full overflow-hidden bg-[#2a2f37]"
+            style={{ boxShadow: photo ? 'var(--shadow-contact)' : 'inset 0 0 0 1px rgba(42,30,26,.35)' }}
+            initial={false}
+            animate={pasted && !reduce ? { scale: [1.04, 1], rotate: [-2, 0] } : undefined}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {photo ? (
+              <img src={photo} alt="Your attendance photo" className="h-full w-full object-cover" />
+            ) : (
+              <span className="flex h-full w-full flex-col items-center justify-center gap-1 text-[#c9cdd4]">
+                <InkIcon.Camera className="h-8 w-8" />
+                <span className="text-[12px] font-semibold">Tap to open camera</span>
+              </span>
+            )}
+            <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-40 mix-blend-screen" viewBox="0 0 100 133" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M-5 104c18-10 30 8 52-2s32-14 58-2" fill="none" stroke="#c9a45c" strokeWidth=".7" />
+              <path d="M-5 110c18-10 30 8 52-2s32-14 58-2" fill="none" stroke="#c9a45c" strokeWidth=".5" />
+            </svg>
+            {['top-0 left-0 border-t-2 border-l-2', 'top-0 right-0 border-t-2 border-r-2', 'bottom-0 left-0 border-b-2 border-l-2', 'right-0 bottom-0 border-r-2 border-b-2'].map((c) => (
+              <span key={c} className={`pointer-events-none absolute h-3 w-3 border-[#8a8f99] ${c}`} aria-hidden="true" />
+            ))}
+          </motion.button>
+        </div>
+
+        <dl className="flex min-w-0 flex-col gap-3">
+          <div>
+            <DocLabel>Full name</DocLabel>
+            <dd className="truncate text-[15px] font-semibold">{p.nama}</dd>
+          </div>
+          <div>
+            <DocLabel>NRP</DocLabel>
+            <dd className="doc-data">{p.nrpMasked}</dd>
+          </div>
+          <div>
+            <DocLabel>Department</DocLabel>
+            <dd className="text-[14px] leading-tight">{p.departemen}</dd>
+          </div>
+          <div className="flex items-end justify-between gap-2">
+            <div>
+              <DocLabel>Class of</DocLabel>
+              <dd className="doc-data">{p.angkatan}</dd>
+            </div>
+            {/* ghost image */}
+            <div className="aspect-[3/4] w-10 border border-dashed border-ink/25" aria-hidden="true">
+              {photo && <motion.img src={photo} alt="" className="h-full w-full object-cover grayscale" initial={{ opacity: 0 }} animate={{ opacity: 0.22 }} transition={{ delay: pasted ? 1.2 : 0, duration: 0.4 }} />}
+            </div>
+          </div>
+        </dl>
+      </div>
+
+      <MRZ name={p.nama} last4={p.nrpLast4} reveal={!!pasted} className="mt-5" />
+
+      <p className="mt-5 text-[14px] text-ink/70">
+        {busy ? 'Pasting your photo into the passport…' : photo ? 'Photo in place. Tap it to retake.' : 'The camera opens as a polaroid — keep your face clearly visible.'}
+      </p>
+      <p className="mt-1 text-[12px] text-ink/55">The photo is used as proof of attendance for FS² and is only seen by the committee.</p>
+      <div className="mt-1">
+        <ErrorText onPaper>{err}</ErrorText>
+      </div>
+
+      <div className="mt-auto pt-8">
+        {busy ? (
+          <div className="relative h-12 overflow-hidden rounded-[4px] border border-ink/25" role="progressbar" aria-label="Saving photo">
+            <motion.span className="absolute inset-0 origin-left bg-stamp/85" initial={{ scaleX: 0 }} animate={{ scaleX: 0.92 }} transition={{ duration: 2.6, ease: [0.22, 1, 0.36, 1] }} aria-hidden="true" />
+            <span className="relative flex h-full items-center justify-center text-[15px] font-semibold text-cream mix-blend-difference">Saving…</span>
+          </div>
+        ) : err && pasted ? (
+          <button type="button" className="btn btn-primary w-full" onClick={() => save(pasted)}>
+            Try again
+          </button>
+        ) : (
+          <motion.button type="button" whileTap={{ scale: 0.98 }} transition={{ duration: 0.06 }} className="btn btn-primary w-full" onClick={() => setCamOpen(true)}>
+            {photo ? 'Retake photo' : 'Open camera'}
+          </motion.button>
+        )}
+      </div>
+      <PageNo n={2} />
+
+      {createPortal(<AnimatePresence>{camOpen && <PolaroidCamera key="cam" boxRef={boxRef} name={p.nama} onClose={() => setCamOpen(false)} onUse={onPasted} />}</AnimatePresence>, document.body)}
+    </div>
+  )
+}
+
+/**
+ * The polaroid camera pop-up. It grows out of the photo box, shows the live viewfinder in the
+ * polaroid window and, once accepted, flies back so its picture lands exactly on the photo box.
+ */
+function PolaroidCamera({ boxRef, name, onClose, onUse }: { boxRef: React.RefObject<HTMLElement | null>; name: string; onClose: () => void; onUse: (s: Shot) => void }) {
+  const reduce = useReducedMotion()
+  const [scope, animate] = useAnimate()
+  const winRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
   const [facing, setFacing] = useState<'user' | 'environment'>('user')
   const [camError, setCamError] = useState('')
-  const [shot, setShot] = useState<{ url: string; blob: Blob } | null>(null)
+  const [shot, setShot] = useState<Shot | null>(null)
   const [flash, setFlash] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [flying, setFlying] = useState(false)
-  const [err, setErr] = useState('')
-  const [scope, animate] = useAnimate()
+  const [leaving, setLeaving] = useState(false)
 
   const stop = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop())
@@ -54,62 +228,63 @@ export function Photo() {
     return stop
   }, [start, shot])
 
+  /** transform that puts the polaroid's picture window exactly over the photo box */
+  const toBox = () => {
+    const card = scope.current as HTMLElement | null
+    const win = winRef.current
+    const box = boxRef.current
+    if (!card || !win || !box) return null
+    const P = card.getBoundingClientRect()
+    const I = win.getBoundingClientRect()
+    const B = box.getBoundingClientRect()
+    const s = B.width / I.width
+    const pc = { x: P.left + P.width / 2, y: P.top + P.height / 2 }
+    const ic = { x: I.left + I.width / 2, y: I.top + I.height / 2 }
+    const bc = { x: B.left + B.width / 2, y: B.top + B.height / 2 }
+    return { x: bc.x - pc.x - s * (ic.x - pc.x), y: bc.y - pc.y - s * (ic.y - pc.y), scale: s }
+  }
+
+  // pop out of the photo box
+  useLayoutEffect(() => {
+    const el = scope.current as HTMLElement | null
+    if (!el) return
+    const t = toBox()
+    if (reduce || !t) animate(el, { opacity: [0, 1] }, { duration: 0.15 })
+    else animate(el, { x: [t.x, 0], y: [t.y, 0], scale: [t.scale, 1], rotate: [0, -2], opacity: [0.4, 1] }, { type: 'spring', stiffness: 260, damping: 26 })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const capture = async () => {
     const v = videoRef.current
     if (!v || !v.videoWidth) return
     setFlash(true)
     sfx.shutter()
     vibrate(30)
-    setTimeout(() => setFlash(false), 80)
-    const side = Math.min(v.videoWidth, v.videoHeight)
+    setTimeout(() => setFlash(false), 90)
+    // passport ratio 3:4, centred crop
+    const vw = v.videoWidth
+    const vh = v.videoHeight
+    const h = Math.min(vh, (vw * 4) / 3)
+    const w = (h * 3) / 4
     const c = document.createElement('canvas')
-    c.width = c.height = Math.min(side, 900)
+    c.width = Math.min(w, 720)
+    c.height = (c.width * 4) / 3
     const ctx = c.getContext('2d')!
     if (facing === 'user') {
       ctx.translate(c.width, 0)
       ctx.scale(-1, 1)
     }
-    ctx.drawImage(v, (v.videoWidth - side) / 2, (v.videoHeight - side) / 2, side, side, 0, 0, c.width, c.height)
+    ctx.drawImage(v, (vw - w) / 2, (vh - h) / 2, w, h, 0, 0, c.width, c.height)
     const blob = await new Promise<Blob>((r) => c.toBlob((b) => r(b!), 'image/jpeg', 0.9))
     setShot({ url: URL.createObjectURL(blob), blob })
     stop()
   }
 
-  const onFile = (f: File | undefined) => {
+  const acceptFile = (f: File | Blob | undefined) => {
     if (!f) return
+    setCamError('')
     setShot({ url: URL.createObjectURL(f), blob: f })
     stop()
-  }
-
-  const use = async () => {
-    if (!shot) return
-    setBusy(true)
-    setErr('')
-    try {
-      const file = new File([shot.blob], 'kehadiran.jpg', { type: shot.blob.type || 'image/jpeg' })
-      const { default: imageCompression } = await import('browser-image-compression')
-      const small = await imageCompression(file, { maxWidthOrHeight: 720, initialQuality: 0.7, maxSizeMB: 0.25, useWebWorker: false, fileType: 'image/jpeg' })
-      await api.uploadPhoto(small)
-      await reload()
-      setFlying(true)
-      // Polaroid flies & shrinks into the passport header photo slot (top-left).
-      const el = scope.current as HTMLElement
-      const r = el.getBoundingClientRect()
-      const target = { x: 20 + 32, y: 22 + 38, w: 64 }
-      if (!reduce) {
-        await animate(
-          el,
-          { x: target.x - (r.left + r.width / 2), y: target.y - (r.top + r.height / 2), scale: target.w / r.width },
-          { duration: 0.7, ease: EASE_OUT },
-        )
-        await new Promise((res) => setTimeout(res, 550))
-      }
-      const onboarded = localStorage.getItem(ONBOARDED_KEY)
-      nav(retake ? '/passport' : onboarded ? '/map' : '/onboarding', { replace: true })
-    } catch (e) {
-      setErr((e as Error).message || 'Could not save the photo. Please try again.')
-      setBusy(false)
-    }
   }
 
   const redo = () => {
@@ -117,105 +292,102 @@ export function Photo() {
     setShot(null)
   }
 
+  // fly back into the photo box, then hand the picture over
+  const use = async () => {
+    if (!shot || leaving) return
+    setLeaving(true)
+    const el = scope.current as HTMLElement | null
+    const t = toBox()
+    if (el && t && !reduce) {
+      await animate(el, { x: t.x, y: t.y, scale: t.scale, rotate: 0 }, { duration: 0.5, ease: [0.65, 0, 0.35, 1] })
+    }
+    onUse(shot)
+  }
+
+  const close = async () => {
+    if (leaving) return
+    setLeaving(true)
+    stop()
+    const el = scope.current as HTMLElement | null
+    const t = toBox()
+    if (el && t && !reduce) await animate(el, { x: t.x, y: t.y, scale: t.scale, rotate: 0, opacity: 0 }, { duration: 0.3, ease: [0.4, 0, 0.6, 1] })
+    onClose()
+  }
+
   return (
-    <main className="relative flex min-h-dvh flex-col overflow-hidden px-5 pt-6 pb-6" style={{ background: 'radial-gradient(90% 45% at 50% 35%, #2a0d10 0%, #120a0c 55%, #0b1020 100%)' }}>
-      <motion.div animate={{ opacity: flying ? 0 : 1 }}>
-        <p className="kicker">Step 1 · Before the booths</p>
-        <h1 className="mt-1 text-[26px] leading-tight font-extrabold text-white">Attendance photo</h1>
-        <p className="mt-2 text-[14px] text-muted">One selfie as proof that you attended FS². Booth officers also see this photo when confirming your visit.</p>
-      </motion.div>
+    <div className="fixed inset-0 z-[80] flex flex-col items-center justify-center px-6" role="dialog" aria-modal="true" aria-label="Attendance photo camera">
+      <motion.div className="absolute inset-0 bg-night-0/85" initial={{ opacity: 0 }} animate={{ opacity: leaving ? 0 : 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} onClick={close} />
 
-      <div className="relative mt-5 flex justify-center">
-        {/* outer wrapper flies to the header; inner polaroid keeps its own swing */}
-        <div ref={scope} className="w-[78%] max-w-[300px]">
-        <motion.div
-          className="bg-[#f4efe4] p-[5%] pb-0 shadow-[0_14px_30px_rgba(0,0,0,0.5)]"
-          initial={false}
-          animate={shot ? { rotate: reduce ? -2 : [-6, -1, -3, -2], y: 0 } : { rotate: 2 }}
-          transition={{ duration: 0.9, ease: 'easeOut' }}
-        >
-          <div className="relative aspect-square overflow-hidden bg-gradient-to-b from-[#2a2f37] to-[#1b1e24]">
-            {!shot && (
-              <>
-                <video ref={videoRef} playsInline muted className="h-full w-full object-cover" style={{ transform: facing === 'user' ? 'scaleX(-1)' : undefined }} aria-label="Camera preview" />
-                <span className="absolute top-3 left-3 text-[13px] text-cream/80">{facing === 'user' ? 'Front camera' : 'Back camera'}</span>
-                <svg viewBox="0 0 100 100" className="pointer-events-none absolute inset-0 m-auto h-[70%] opacity-50" aria-hidden="true">
-                  <ellipse cx="50" cy="40" rx="17" ry="21" fill="none" stroke="#fff" strokeWidth="1.2" strokeDasharray="4 3" />
-                  <path d="M20 92c3-18 15-28 30-28s27 10 30 28" fill="none" stroke="#fff" strokeWidth="1.2" strokeDasharray="4 3" />
-                </svg>
-              </>
-            )}
-            <AnimatePresence>
-              {shot && (
-                <motion.img
-                  key={shot.url}
-                  src={shot.url}
-                  alt="Your attendance photo"
-                  className="absolute inset-0 h-full w-full object-cover"
-                  initial={reduce ? { opacity: 0 } : { opacity: 0, y: 60 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, ease: EASE_OUT }}
-                />
-              )}
-            </AnimatePresence>
-          </div>
-          <div className="py-3 text-center font-serif text-[15px] text-[#0d2a4a] italic">FS² · 28·10·26</div>
-        </motion.div>
-        </div>
-
-        {/* storyboard 2c: passport label appears beside the flown photo */}
-        <AnimatePresence>
-          {flying && (
-            <motion.div initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.55 }} className="fixed top-[24px] left-[100px] z-10">
-              <p className="kicker text-[12px]">FS² Passport</p>
-              <p className="text-[16px] font-extrabold text-white">{state?.participant.nama}</p>
-            </motion.div>
+      {/* the polaroid */}
+      <div ref={scope} className="relative w-full max-w-[290px] bg-[#f7f3ea] p-3 pb-0 shadow-[0_18px_40px_rgba(0,0,0,.55)]" style={{ transformOrigin: 'center' }}>
+        <div ref={winRef} className="relative aspect-[3/4] w-full overflow-hidden bg-[#1c2026]">
+          {!shot && <video ref={videoRef} playsInline muted className="h-full w-full object-cover" style={{ transform: facing === 'user' ? 'scaleX(-1)' : undefined }} aria-label="Camera preview" />}
+          {shot && <img src={shot.url} alt="Your attendance photo" className="h-full w-full object-cover" />}
+          {!shot && !camError && (
+            <svg viewBox="0 0 100 133" className="pointer-events-none absolute inset-0 h-full w-full opacity-45" aria-hidden="true">
+              <ellipse cx="50" cy="54" rx="22" ry="28" fill="none" stroke="#f3ebdd" strokeWidth="1" strokeDasharray="3 3" />
+              <path d="M14 128c4-24 18-36 36-36s32 12 36 36" fill="none" stroke="#f3ebdd" strokeWidth="1" strokeDasharray="3 3" />
+            </svg>
           )}
-        </AnimatePresence>
+          {camError && !shot && <p className="absolute inset-x-3 top-1/2 -translate-y-1/2 text-center text-[13px] leading-snug text-[#f3ebdd]/85">{camError}</p>}
+          <AnimatePresence>{flash && <motion.div className="pointer-events-none absolute inset-0 bg-[#fffaf0]" initial={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.2 } }} />}</AnimatePresence>
+        </div>
+        <p className={`flex h-14 items-center justify-center font-serif text-[19px] italic text-ink/80 transition-opacity ${leaving ? 'opacity-0' : ''}`}>{shot ? name.split(' ')[0] : facing === 'user' ? 'Smile :)' : 'Back camera'}</p>
       </div>
 
-      <motion.div animate={{ opacity: flying ? 0 : 1 }} className="mt-4 text-center text-[14px] text-muted">
-        {camError ? <span className="text-[#ffb4a8]">{camError}</span> : shot ? 'Is your face clearly visible? Use this photo.' : 'Make sure your face is clearly visible'}
-      </motion.div>
-      <p className="mt-1 text-center text-[12px] text-muted/80">The photo is used as proof of attendance for FS² and is only seen by the committee.</p>
-      <ErrorText>{err}</ErrorText>
-
-      <motion.div animate={{ opacity: flying ? 0 : 1 }} className="mt-auto pt-6">
+      {/* controls under the polaroid */}
+      <motion.div className="relative mt-6 w-full max-w-[290px]" animate={{ opacity: leaving ? 0 : 1 }} transition={{ duration: 0.15 }}>
         {!shot ? (
-          <div className="relative flex items-center justify-center">
-            <button
-              type="button"
-              aria-label="Switch camera"
-              onClick={() => setFacing((f) => (f === 'user' ? 'environment' : 'user'))}
-              className="absolute left-[12%] flex h-14 w-14 items-center justify-center rounded-full border border-[#4a3a3e] text-cream"
-            >
-              <Icon.Flip className="h-6 w-6" />
-            </button>
-            {camError ? (
-              <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-red">
+          camError ? (
+            <div className="flex flex-col items-stretch gap-2">
+              {/* the real control is the file input; the label is the visible button */}
+              <label className="btn btn-primary w-full cursor-pointer">
                 Take photo
+                <input type="file" accept="image/*" capture="user" className="sr-only" onChange={(e) => acceptFile(e.target.files?.[0])} />
+              </label>
+              {isMock && (
+                <button type="button" className="min-h-11 text-[14px] text-cream/85 underline underline-offset-4" onClick={async () => acceptFile(await samplePhoto())}>
+                  Use sample photo
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 items-center">
+              <button type="button" onClick={close} className="min-h-12 justify-self-start text-[15px] text-cream/85">
+                Later
               </button>
-            ) : (
-              <button type="button" aria-label="Take photo" onClick={capture} className="h-[78px] w-[78px] rounded-full border-[5px] border-[#f4efe4] bg-red shadow-[0_0_24px_rgba(232,32,32,0.5)] active:scale-95" />
-            )}
-            <input ref={fileRef} type="file" accept="image/*" capture="user" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} aria-label="Choose photo" />
-          </div>
+              <motion.button
+                type="button"
+                aria-label="Take photo"
+                onClick={capture}
+                whileTap={{ scale: 0.94 }}
+                transition={{ duration: 0.06 }}
+                className="flex h-[68px] w-[68px] items-center justify-center justify-self-center rounded-full border-[3px] border-cream"
+              >
+                <span className="h-12 w-12 rounded-full bg-stamp" />
+              </motion.button>
+              <button type="button" aria-label="Switch camera" onClick={() => setFacing((f) => (f === 'user' ? 'environment' : 'user'))} className="flex h-12 w-12 items-center justify-center justify-self-end text-cream/85">
+                <InkIcon.Camera className="h-7 w-7" />
+              </button>
+              {isMock && (
+                <button type="button" className="col-span-3 mt-2 min-h-11 text-[14px] text-cream/80 underline underline-offset-4" onClick={async () => acceptFile(await samplePhoto())}>
+                  Use sample photo
+                </button>
+              )}
+            </div>
+          )
         ) : (
-          <div className="grid grid-cols-[1fr_1.4fr] gap-3">
-            <button type="button" onClick={redo} className="btn btn-ghost" disabled={busy}>
+          <div className="flex items-center gap-4">
+            <button type="button" onClick={redo} className="min-h-12 px-1 text-[15px] font-semibold text-cream/90 underline underline-offset-4">
               Retake
             </button>
-            <button type="button" onClick={use} className="btn btn-red" disabled={busy}>
-              {busy ? <Spinner /> : 'Use this photo'}
-            </button>
+            <motion.button type="button" onClick={use} whileTap={{ scale: 0.98 }} transition={{ duration: 0.06 }} className="btn btn-primary flex-1">
+              Use this photo
+            </motion.button>
           </div>
         )}
+        {!shot && <p className="mt-3 text-center text-[13px] text-cream/70">Face clearly visible, good light.</p>}
       </motion.div>
-
-      {/* shutter flash */}
-      <AnimatePresence>{flash && <motion.div className="pointer-events-none fixed inset-0 z-50 bg-white" initial={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.15 } }} />}</AnimatePresence>
-    </main>
+    </div>
   )
 }
-
-export { ONBOARDED_KEY }

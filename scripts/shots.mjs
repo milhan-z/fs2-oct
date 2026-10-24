@@ -72,7 +72,7 @@ await shot('07-booth-sheet')
 await page.getByRole('button', { name: 'Close', exact: true }).click()
 await wait(400)
 
-await page.getByRole('link', { name: 'Show QR' }).click()
+await page.getByRole('button', { name: 'QR', exact: true }).click()
 await wait(800)
 await shot('08-qr')
 await dev('Stamp B2')

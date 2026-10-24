@@ -100,7 +100,7 @@ try {
   await page.waitForURL('**/map')
   await wait(800)
   await shot(page, '01-peta')
-  await page.getByRole('link', { name: 'Show QR' }).click()
+  await page.getByRole('button', { name: 'QR', exact: true }).click()
   await wait(800)
   await shot(page, '02-qr')
 
@@ -148,7 +148,7 @@ try {
   await page.getByRole('radio').nth(4).click()
   await page.getByRole('radio').nth(8).click()
   await wait(1200)
-  await page.getByRole('button', { name: /Submit/ }).click()
+  await page.getByRole('button', { name: 'Submit', exact: true }).click()
   await page.waitForURL('**/status', { timeout: 10000 })
   await wait(800)
   await shot(page, '06-status')

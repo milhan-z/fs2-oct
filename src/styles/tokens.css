@@ -119,7 +119,11 @@
 /* paper noise + guilloche as reusable backgrounds (DESIGN.md §2) */
 :root {
   --tex-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.12 0 0 0 0 0.10 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  --tex-guilloche: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120' fill='none' stroke='%2312304a' stroke-width='.6'%3E%3Cpath d='M0 60c15-18 30-18 45 0s30 18 45 0 30-18 45 0M0 70c15-18 30-18 45 0s30 18 45 0 30-18 45 0M0 50c15-18 30-18 45 0s30 18 45 0 30-18 45 0'/%3E%3Ccircle cx='60' cy='60' r='26'/%3E%3Ccircle cx='60' cy='60' r='34' stroke-dasharray='2 3'/%3E%3C/svg%3E");
+  /* alpha noise used as a mask so stamp ink looks uneven */
+  --tex-ink-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.2 2.25'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --tex-linen: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0 1px, transparent 1px 3px);
+  --tex-paper-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.12 0 0 0 0 0.10 0 0 0 .16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --tex-guilloche: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120' fill='none' stroke='%2312304a' stroke-opacity='.075' stroke-width='.6'%3E%3Cpath d='M0 60c15-18 30-18 45 0s30 18 45 0 30-18 45 0M0 70c15-18 30-18 45 0s30 18 45 0 30-18 45 0M0 50c15-18 30-18 45 0s30 18 45 0 30-18 45 0'/%3E%3Ccircle cx='60' cy='60' r='26'/%3E%3Ccircle cx='60' cy='60' r='34' stroke-dasharray='2 3'/%3E%3C/svg%3E");
 }
 
 @layer components {
@@ -132,9 +136,8 @@
   }
   .mat-paper {
     background-color: var(--color-paper);
-    background-image: var(--tex-noise), var(--tex-guilloche);
+    background-image: var(--tex-paper-noise), var(--tex-guilloche);
     background-size: 160px 160px, 120px 120px;
-    background-blend-mode: multiply, normal;
     color: var(--color-ink);
     border-radius: var(--radius-page);
   }
@@ -147,7 +150,7 @@
   }
   .mat-ticket {
     background-color: var(--color-ticket);
-    background-image: var(--tex-noise);
+    background-image: var(--tex-paper-noise);
     color: var(--color-ink);
     border-radius: 2px;
   }
@@ -183,6 +186,54 @@
     border: 1px solid color-mix(in srgb, var(--color-ink) 45%, transparent);
     color: var(--color-ink);
     border-radius: var(--radius-btn);
+  }
+  /* form row on passport paper: a printed baseline, a 4px box only while focused */
+  .field-row {
+    width: 100%;
+    min-height: 46px;
+    padding: 6px 8px 4px;
+    font-size: 16px;
+    color: var(--color-ink);
+    background: transparent;
+    border: 0;
+    border-bottom: 1.5px solid color-mix(in srgb, var(--color-ink) 38%, transparent);
+    border-radius: var(--radius-input) var(--radius-input) 0 0;
+    transition: background-color 150ms, border-color 150ms;
+  }
+  .field-row::placeholder {
+    color: color-mix(in srgb, var(--color-ink) 38%, transparent);
+  }
+  .field-row:focus {
+    outline: none;
+    background: rgba(255, 252, 244, 0.7);
+    border-bottom-color: var(--color-ink);
+    box-shadow: 0 0 0 1.5px var(--color-ink);
+  }
+  select.field-row {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%232a1e1a' stroke-width='1.6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 11px;
+    padding-right: 26px;
+  }
+  /* ruled writing lines for notes */
+  .ruled {
+    width: 100%;
+    font-size: 16px;
+    line-height: 28px;
+    padding: 0 4px;
+    color: var(--color-ink);
+    background: repeating-linear-gradient(to bottom, transparent 0 27px, color-mix(in srgb, var(--color-ink) 22%, transparent) 27px 28px);
+    background-attachment: local;
+    border: 0;
+    resize: none;
+  }
+  .ruled:focus {
+    outline: none;
+    background-color: rgba(255, 252, 244, 0.6);
+    box-shadow: 0 0 0 1.5px var(--color-ink);
+    border-radius: var(--radius-input);
   }
   .rule-row {
     border-bottom: 1.5px solid color-mix(in srgb, var(--color-ink) 40%, transparent);
@@ -240,8 +291,8 @@
     justify-content: center;
     gap: 8px;
     min-height: 48px;
-    border-radius: 14px;
-    font-weight: 700;
+    border-radius: var(--radius-btn);
+    font-weight: 600;
     font-size: 16px;
     padding: 0 18px;
     transition: transform 0.12s ease, opacity 0.2s;
@@ -363,10 +414,14 @@
   }
 }
 
-/* Disabled buttons always look disabled, whatever bg utility they carry. */
+/* Disabled buttons always look disabled, whatever bg utility they carry: unprinted outline. */
 .btn:disabled {
-  background: #4a3f40 !important;
-  color: #a99a98 !important;
+  background: transparent !important;
+  color: color-mix(in srgb, var(--color-ink) 42%, transparent) !important;
   border-color: transparent !important;
-  box-shadow: none !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-ink) 28%, transparent) !important;
+}
+.on-night .btn:disabled {
+  color: rgba(244, 232, 226, 0.45) !important;
+  box-shadow: inset 0 0 0 1px rgba(244, 232, 226, 0.25) !important;
 }

@@ -27,7 +27,7 @@ export function FsBadge({ size = 44 }: { size?: number }) {
 /** Official partner logos strip (Kemitraan Global · ITS · …) from the GSM header. */
 export function LogoStrip({ className = '' }: { className?: string }) {
   return (
-    <div className={`rounded-full bg-white px-4 py-1.5 shadow-md ${className}`}>
+    <div className={`rounded-[2px] bg-[#fbf7ee] px-3 py-1 ${className}`}>
       <img src="/assets/gsm/logo-strip.webp" alt="Directorate of Global Partnership ITS and partners" className="mx-auto h-auto w-full max-w-[300px]" draggable={false} />
     </div>
   )
@@ -109,22 +109,24 @@ export function Polaroid({ src, caption, className = '', imgClassName = '' }: { 
   )
 }
 
-/** Front cover. Text scales with the cover width (container query units) so it fits any phone height. */
+/** Front cover: navy cloth with gold foil emboss. Text scales with the cover width (container units). */
 export function PassportCover({ tagline }: { tagline: string }) {
   return (
-    <div className="@container relative h-full w-full rounded-[3%_6%_6%_3%] bg-[#102d44] shadow-[0_20px_50px_rgba(0,0,0,0.55),inset_6px_0_0_#0c2438]">
-      <div className="absolute inset-[5%] flex flex-col items-center justify-between rounded-[3cqw] border border-gold py-[9%] text-center font-mono text-gold">
-        <div className="text-[4.6cqw] font-bold tracking-[0.5em]">PASSPORT</div>
-        <div className="flex flex-col items-center gap-[3cqw]">
-          <div className="flex aspect-square w-[34cqw] items-center justify-center rounded-full border border-gold">
-            <span className="font-serif text-[11cqw] font-bold">
+    <div className="@container mat-cover relative h-full w-full rounded-[3px_5px_5px_3px] shadow-[var(--shadow-lift)]">
+      {/* hinge crease near the spine */}
+      <div className="absolute inset-y-0 left-[5%] w-px bg-black/25 shadow-[1px_0_0_rgba(255,255,255,0.05)]" aria-hidden="true" />
+      <div className="absolute inset-[6%] flex flex-col items-center justify-between rounded-[2px] border border-emboss/70 py-[10%] text-center font-mono text-emboss">
+        <div className="emboss text-[4.6cqw] font-bold tracking-[0.5em]">PASSPORT</div>
+        <div className="flex flex-col items-center gap-[4cqw]">
+          <div className="flex aspect-square w-[36cqw] items-center justify-center rounded-full border-[1.5px] border-emboss/80">
+            <span className="emboss font-serif text-[12cqw] font-bold">
               FS<sup className="text-[0.55em]">2</sup>
             </span>
           </div>
-          <div className="px-[6cqw] text-[3.7cqw] tracking-[0.28em]">FROM STUDENTS FOR STUDENTS</div>
+          <div className="emboss px-[8cqw] text-[3.8cqw] tracking-[0.26em]">FROM STUDENTS FOR STUDENTS</div>
         </div>
-        <p className="neon-text flicker-once px-[6cqw] font-serif text-[6.4cqw] leading-[1.3] font-bold">{tagline}</p>
-        <div className="px-[6cqw] text-[3.5cqw] tracking-[0.24em]">STUDENT BOOTH · SPECIAL EDITION</div>
+        <p className="neon-text flicker-once px-[7cqw] font-serif text-[7cqw] leading-[1.3] font-bold">{tagline}</p>
+        <div className="emboss px-[6cqw] text-[3.4cqw] tracking-[0.24em]">STUDENT BOOTH · SPECIAL EDITION</div>
       </div>
     </div>
   )

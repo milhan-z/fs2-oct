@@ -308,3 +308,17 @@ After each screen:
 2. Grep the screen for `rounded-2xl|rounded-3xl|rounded-\[(1[2-9]|2\d)px\]|shadow-\[0_0_|radial-gradient|kicker`.
 3. Count eyebrows (≤1) and decor kinds (≤2).
 4. Confirm the text diff is empty (`git diff -U0 | grep '^[-+].*>[^<{]*[A-Za-z]'` reviewed by hand).
+
+---
+
+## 6. Decisions on E1–E6 (Hilman, 24 Oct)
+| # | Decision | How it lands in this plan |
+| --- | --- | --- |
+| E1 | **Yes** | Notes are written on the visa page itself (2.9 merges into 2.8). After a stamp you can write right away or come back later; progress autosaves per visa page. Same data and API as today. |
+| E2 | Pending (explained) | Until decided, QR stays an overlay ticket that grows from the QR tab (2.7 default). |
+| E3 | **Yes** | The map lives in the back pocket: the folded sheet slides out of the pocket and unfolds (3-panel accordion, transform only). The full unfold plays on the first open per session; later visits unfold quickly (≤300 ms). |
+| E4 | **Yes, with QR kept** | Navigation = 3 index tabs hanging from the bottom edge of the book: **Map · QR · Passport**. The QR tab is a perforated permit tab. No floating circle and no glow. |
+| E5 | **Yes** | The copy tone shifts to "Upside Down immigration" with the same information. Every changed string is listed in `docs/COPY-E5.md` (before → after) for review. |
+| E6 | Pending (explained) | Sign in keeps the ruled form rows (2.2 default) until decided. |
+
+Progress lights: one small light string hangs above the book on every page (Night decor) and doubles as the progress indicator. On the cover all bulbs flicker on as decor. The stamp moment lights the next bulb **in that same string** (satisfies "lampu progres di header yang sama").

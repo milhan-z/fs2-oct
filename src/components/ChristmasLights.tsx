@@ -5,101 +5,79 @@ export const BULB_COLORS = ['#E53935', '#F6C343', '#43A047', '#3B5BDB', '#3A9AAE
 /** Irregular "Joyce Byers" flicker keyframes ending lit. */
 const FLICKER = [0, 1, 0.15, 0.9, 0.3, 1, 0.6, 1]
 
-interface BigProps {
-  /** how many bulbs are lit (from the left) */
-  lit: number
+interface Props {
+  /** how many bulbs are lit (from the left); 'all' = decorative */
+  lit: number | 'all'
   count?: number
-  /** turn bulbs on one by one with flicker on mount */
+  /** turn bulbs on one by one with flicker on mount (cover, onboarding) */
   sequence?: boolean
-  /** index of a bulb that just turned on — flickers 3× */
+  /** index of a bulb that just turned on — flickers, then stays */
   justLit?: number | null
-  /** all lit bulbs blink together once */
+  /** all lit bulbs blink together once (4/4) */
   celebrate?: boolean
   className?: string
+  label?: string
 }
 
-/** Big bulbs on a wire — cover, stamp moment, status. Each bulb animates on its own. */
-export function BigLights({ lit, count = 4, sequence = false, justLit = null, celebrate = false, className = '' }: BigProps) {
+/**
+ * A small light string hung across the top of the scene (DESIGN.md: bulbs ±14–18 px, wire runs
+ * past both edges, glow never clipped). The SVG is wider than its box and overflow stays visible.
+ * Doubles as the progress indicator: lit bulbs = stamped booths.
+ */
+export function LightString({ lit, count = 4, sequence = false, justLit = null, celebrate = false, className = '', label }: Props) {
   const reduce = useReducedMotion()
-  const w = 320
-  const xs = Array.from({ length: count }, (_, i) => 52 + i * ((w - 104) / Math.max(1, count - 1)))
-  const wireY = (x: number) => 24 + 14 * Math.sin((x / w) * Math.PI * 1.6 + 0.4)
+  const W = 300
+  const H = 46
+  // wire sags gently between the bulbs and keeps rising beyond both edges, drawn far past the
+  // viewBox so it always leaves the screen whatever the aspect ratio
+  const wireY = (x: number) => (x < 0 ? 9 + x * 0.05 : x > W ? 9 - (x - W) * 0.05 : 9 + 9 * Math.sin((x / W) * Math.PI))
+  const xs = Array.from({ length: count }, (_, i) => 46 + i * ((W - 92) / Math.max(1, count - 1)))
+  const allLit = lit === 'all'
   return (
-    <svg viewBox={`0 0 ${w} 86`} className={className} aria-hidden="true">
-      <path d={`M0 ${wireY(0)} ${Array.from({ length: 33 }, (_, i) => `L${i * 10} ${wireY(i * 10)}`).join(' ')}`} fill="none" stroke="#3a3436" strokeWidth="2.5" />
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className={className}
+      style={{ overflow: 'visible' }}
+      role={label ? 'img' : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
+    >
+      <path
+        d={`M-600 ${wireY(-600)} ${Array.from({ length: 151 }, (_, i) => {
+          const x = -600 + i * 10
+          return `L${x} ${wireY(x)}`
+        }).join(' ')}`}
+        fill="none"
+        stroke="#2a1d1f"
+        strokeWidth="1.6"
+      />
       {xs.map((x, i) => {
-        const y = wireY(x) + 6
-        const on = i < lit
+        const y = wireY(x) + 2
+        const on = allLit || i < (lit as number)
         const color = BULB_COLORS[i % BULB_COLORS.length]
         const animateOn = !reduce && on && (sequence || justLit === i || celebrate)
-        const delay = sequence ? 0.25 + i * 0.32 + (i % 2) * 0.08 : 0
-        const keyframes = celebrate ? [1, 0.2, 1] : justLit === i ? [0, 1, 0.1, 1, 0.2, 1] : FLICKER
+        const keyframes = celebrate ? [1, 0.25, 1] : justLit === i ? [0, 1, 0.1, 1, 0.25, 1] : FLICKER
         return (
           <g key={i}>
-            <rect x={x - 3} y={y - 4} width="6" height="8" rx="1" fill="#4a4446" />
+            <rect x={x - 2.5} y={y - 1} width="5" height="5" rx="1" fill="#3b3133" />
             {on ? (
               <motion.g
                 initial={animateOn ? { opacity: 0 } : false}
                 animate={{ opacity: animateOn ? keyframes : 1 }}
-                transition={{ duration: celebrate ? 0.6 : 0.9, delay, times: undefined }}
+                transition={{ duration: celebrate ? 0.6 : 0.9, delay: sequence ? 0.25 + i * 0.28 + (i % 2) * 0.09 : 0 }}
               >
-                <circle cx={x} cy={y + 24} r="31" fill={color} opacity="0.22" />
-                <ellipse cx={x} cy={y + 24} rx="13" ry="19" fill={color} />
-                <ellipse cx={x - 4} cy={y + 17} rx="3.5" ry="6" fill="#fff" opacity="0.35" />
+                {/* halo is a soft blob inside the visible overflow — never clipped */}
+                <circle cx={x} cy={y + 13} r="15" fill={color} opacity="0.16" />
+                <circle cx={x} cy={y + 13} r="9" fill={color} opacity="0.22" />
+                <ellipse cx={x} cy={y + 13} rx="5.5" ry="8" fill={color} />
+                <ellipse cx={x - 1.6} cy={y + 10} rx="1.4" ry="2.6" fill="#fff6e8" opacity="0.5" />
               </motion.g>
             ) : (
-              <ellipse cx={x} cy={y + 24} rx="13" ry="19" fill={color} fillOpacity="0.16" stroke={color} strokeOpacity="0.4" strokeWidth="2" />
+              <ellipse cx={x} cy={y + 13} rx="5.5" ry="8" fill={color} fillOpacity="0.14" stroke={color} strokeOpacity="0.45" strokeWidth="1" />
             )}
           </g>
         )
       })}
     </svg>
-  )
-}
-
-/** Small droplet bulbs along a sagging wire — map panel & booth sheet. */
-export function StringLights({ className = '', count = 7 }: { className?: string; count?: number }) {
-  const reduce = useReducedMotion()
-  return (
-    <svg viewBox="0 0 354 60" preserveAspectRatio="none" className={className} aria-hidden="true">
-      <path d="M-4 10 Q 88 40 177 18 T 358 12" fill="none" stroke="#1a0a0c" strokeWidth="2" />
-      {Array.from({ length: count }, (_, i) => {
-        const x = 24 + i * (310 / (count - 1))
-        const y = 17 + 14 * Math.sin((i / (count - 1)) * Math.PI * 1.1)
-        return (
-          <motion.path
-            key={i}
-            d={`M${x} ${y} q-5 8 0 15 q5 -7 0 -15z`}
-            fill={BULB_COLORS[i % BULB_COLORS.length]}
-            animate={reduce ? undefined : { opacity: [1, 0.55, 1] }}
-            transition={{ duration: 2.4 + (i % 3) * 0.7, repeat: Infinity, delay: i * 0.37 }}
-          />
-        )
-      })}
-    </svg>
-  )
-}
-
-/** 4 progress lights in the participant header (MOTION #7). */
-export function ProgressLights({ lit, count = 4, justLit = null, celebrate = false }: { lit: number; count?: number; justLit?: number | null; celebrate?: boolean }) {
-  const reduce = useReducedMotion()
-  return (
-    <div className="flex gap-1.5" role="img" aria-label={`${lit} of ${count} booths stamped`}>
-      {Array.from({ length: count }, (_, i) => {
-        const c = BULB_COLORS[i % BULB_COLORS.length]
-        const on = i < lit
-        const anim = !reduce && on && (justLit === i || celebrate)
-        return (
-          <motion.span
-            key={i}
-            className="block h-[19px] w-[13px] rounded-[50%_50%_45%_45%]"
-            style={on ? { background: c, boxShadow: `0 0 8px ${c}` } : { background: `${c}2e`, boxShadow: `inset 0 0 0 1.5px ${c}66` }}
-            initial={false}
-            animate={anim ? { opacity: celebrate ? [1, 0.2, 1] : [0.2, 1, 0.2, 1, 0.2, 1] } : { opacity: 1 }}
-            transition={{ duration: 0.6 }}
-          />
-        )
-      })}
-    </div>
   )
 }

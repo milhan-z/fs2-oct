@@ -1,12 +1,12 @@
-import { motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { api } from '../../data/api'
 import { useContent } from '../../app/providers'
 import { useParticipant } from '../../app/participant'
 import { ErrorText, Spinner } from '../../components/ui'
-import { Icon } from '../../components/decor'
-import { EASE_OUT } from '../../motion/presets'
+import { InkIcon } from '../../booklet/icons'
+import { DocLabel, Folio, MRZ, PageNo } from '../../booklet/print'
 
 type Step = 'nrp' | 'pin' | 'register'
 
@@ -19,8 +19,8 @@ const TITLES: Record<Step, [string, string]> = {
 }
 
 /**
- * P1 — the inside page of the passport (cream security paper). It grows out of the cover's
- * inside page (layoutId "passport-page"), so opening the passport flows straight into sign-in.
+ * P1 — page 01 of the passport: an application form printed on security paper. It is already
+ * mounted under the closed cover, so opening the cover reveals this exact page.
  */
 export function Login() {
   const nav = useNavigate()
@@ -98,81 +98,76 @@ export function Login() {
   const pinProps = { inputMode: 'numeric' as const, pattern: '[0-9]*', maxLength: 4, autoComplete: 'off', type: 'password' }
   const subtitle =
     step === 'nrp'
-      ? 'Use your NRP. No passport yet? We’ll create one for you.'
+      ? 'Present your NRP. No passport yet? The bureau will issue one on the spot.'
       : step === 'pin'
         ? `NRP ${nrp} already has a passport.`
-        : 'This NRP has no passport yet. Fill this in once, then set a PIN.'
-  const label = 'text-[13px] font-bold text-navy'
+        : 'No passport on file for this NRP yet. Fill in this form once, then set a PIN.'
+  const submitBtn = (label: string, disabled: boolean) => (
+    <motion.button type="submit" whileTap={{ scale: 0.98 }} transition={{ duration: 0.06 }} className="btn btn-primary w-full" disabled={disabled}>
+      {busy ? <Spinner /> : label}
+    </motion.button>
+  )
 
   return (
-    <main className="flex min-h-dvh flex-col bg-bg-0 p-2.5">
-      <motion.section layoutId="passport-page" className="paper-page flex flex-1 flex-col overflow-hidden rounded-[18px]" transition={{ duration: 0.55, ease: EASE_OUT }}>
+    <div className="relative flex min-h-full flex-col px-6 pt-3 pb-10">
+      <div className="flex items-center gap-1">
+        <button type="button" aria-label="Back" onClick={back} className="-ml-3 flex h-11 w-11 items-center justify-center text-ink/80">
+          <InkIcon.Back className="h-5 w-5" />
+        </button>
+        <Folio left="Passport · FS²" serial={nrp.length >= 4 ? `FS2-${nrp.slice(-4)}` : 'FS2-————'} className="flex-1" />
+      </div>
+
+      <AnimatePresence mode="wait" initial={false}>
         <motion.div
-          className="flex flex-1 flex-col px-5 pt-3 pb-5"
-          initial={reduce ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: reduce ? 0 : 0.35, duration: 0.3 }}
+          key={step}
+          initial={reduce ? { opacity: 0 } : { opacity: 0, x: 14 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={reduce ? { opacity: 0 } : { opacity: 0, x: -14 }}
+          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-1 flex-col"
         >
-          <div className="flex items-center justify-between">
-            <button type="button" aria-label="Back" onClick={back} className="-ml-2 flex h-11 w-11 items-center justify-center rounded-full text-navy hover:bg-navy/5">
-              <Icon.Back className="h-5 w-5" />
-            </button>
-            <p className="font-mono text-[11px] font-bold tracking-[0.3em] text-navy">PASSPORT · FS²</p>
-            <span className="w-9" />
-          </div>
+          <p className="mt-6 text-[13px] text-[#8a5a12] italic">{TITLES[step][0]}</p>
+          <h1 className="page-title mt-1">{TITLES[step][1]}</h1>
+          <p className="mt-2 text-[15px] leading-[22px] text-ink/75">{subtitle}</p>
 
-          <motion.div key={step} initial={reduce ? false : { opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25, ease: EASE_OUT }} className="flex flex-1 flex-col">
-            <p className="mt-3 font-mono text-[11px] tracking-[0.25em] text-[#9a6b12] uppercase">{TITLES[step][0]}</p>
-            <h1 className="mt-1 font-serif text-[24px] leading-tight font-bold text-navy">{TITLES[step][1]}</h1>
-            <p className="mt-1.5 text-[14px] text-[#5a5048]">{subtitle}</p>
-
-            {step === 'nrp' && (
-              <form onSubmit={submitNrp} className="mt-5 flex flex-1 flex-col gap-1.5" noValidate>
-                <label htmlFor="nrp" className={label}>
-                  NRP
-                </label>
-                <input id="nrp" className="field-ink" inputMode="numeric" autoComplete="username" placeholder="e.g. 5025240028" value={nrp} onChange={(e) => setNrp(e.target.value.replace(/\D/g, ''))} autoFocus />
+          {step === 'nrp' && (
+            <form onSubmit={submitNrp} className="mt-8 flex flex-1 flex-col" noValidate>
+              <DocLabel htmlFor="nrp">NRP</DocLabel>
+              <input id="nrp" className="field-row font-mono tracking-[0.12em]" inputMode="numeric" autoComplete="username" placeholder="e.g. 5025240028" value={nrp} onChange={(e) => setNrp(e.target.value.replace(/\D/g, ''))} />
+              <div className="mt-2">
                 <ErrorText onPaper>{err}</ErrorText>
-                <div className="mt-auto pt-6">
-                  <button type="submit" className="btn btn-red w-full" disabled={busy || !nrp}>
-                    {busy ? <Spinner /> : 'Continue'}
-                  </button>
-                </div>
-              </form>
-            )}
+              </div>
+              <div className="mt-auto pt-8">{submitBtn('Continue', busy || !nrp)}</div>
+            </form>
+          )}
 
-            {step === 'pin' && (
-              <form onSubmit={submitPin} className="mt-5 flex flex-1 flex-col gap-1.5" noValidate>
-                <label htmlFor="pin" className={label}>
-                  4-digit PIN
-                </label>
-                <input id="pin" className="field-ink tracking-[0.6em]" {...pinProps} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} autoFocus />
+          {step === 'pin' && (
+            <form onSubmit={submitPin} className="mt-8 flex flex-1 flex-col" noValidate>
+              <DocLabel htmlFor="pin">4-digit PIN</DocLabel>
+              <input id="pin" className="field-row w-40 font-mono tracking-[0.6em]" {...pinProps} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} autoFocus />
+              <div className="mt-2">
                 <ErrorText onPaper>{err}</ErrorText>
-                <p className="text-[13px] text-[#5a5048]">Forgot your PIN? Ask for a reset at the Front Office.</p>
-                <div className="mt-auto pt-6">
-                  <button type="submit" className="btn btn-red w-full" disabled={busy || pin.length !== 4}>
-                    {busy ? <Spinner /> : 'Open passport'}
-                  </button>
-                </div>
-              </form>
-            )}
+              </div>
+              <p className="mt-3 text-[13px] text-ink/60">Forgot your PIN? Ask for a reset at the Front Office.</p>
+              <div className="mt-auto pt-8">{submitBtn('Open passport', busy || pin.length !== 4)}</div>
+            </form>
+          )}
 
-            {step === 'register' && (
-              <form onSubmit={submitRegister} className="mt-4 flex flex-1 flex-col gap-1.5" noValidate>
-                <label htmlFor="r-nrp" className={label}>
-                  NRP
-                </label>
-                <input id="r-nrp" className="field-ink" inputMode="numeric" value={nrp} onChange={(e) => setNrp(e.target.value.replace(/\D/g, ''))} />
-                <label htmlFor="r-nama" className={`${label} mt-2`}>
-                  Full name
-                </label>
-                <input id="r-nama" className="field-ink" autoComplete="name" value={nama} onChange={(e) => setNama(e.target.value)} autoFocus />
-                <div className="mt-2 grid grid-cols-[1fr_104px] gap-2.5">
-                  <div className="flex min-w-0 flex-col gap-1.5">
-                    <label htmlFor="r-dept" className={label}>
-                      Department
-                    </label>
-                    <select id="r-dept" className="field-ink" value={dept} onChange={(e) => setDept(e.target.value)}>
+          {step === 'register' && (
+            <form onSubmit={submitRegister} className="mt-6 flex flex-1 flex-col" noValidate>
+              <div className="grid gap-5">
+                <div>
+                  <DocLabel htmlFor="r-nrp">NRP</DocLabel>
+                  <input id="r-nrp" className="field-row font-mono tracking-[0.12em]" inputMode="numeric" value={nrp} onChange={(e) => setNrp(e.target.value.replace(/\D/g, ''))} />
+                </div>
+                <div>
+                  <DocLabel htmlFor="r-nama">Full name</DocLabel>
+                  <input id="r-nama" className="field-row" autoComplete="name" value={nama} onChange={(e) => setNama(e.target.value)} autoFocus />
+                </div>
+                <div className="grid grid-cols-[1fr_96px] gap-4">
+                  <div className="min-w-0">
+                    <DocLabel htmlFor="r-dept">Department</DocLabel>
+                    <select id="r-dept" className="field-row" value={dept} onChange={(e) => setDept(e.target.value)}>
                       <option value="">Choose…</option>
                       {content?.departemen.map((d) => (
                         <option key={d}>{d}</option>
@@ -180,11 +175,9 @@ export function Login() {
                       <option>Other</option>
                     </select>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="r-angk" className={label}>
-                      Class of
-                    </label>
-                    <select id="r-angk" className="field-ink" value={angkatan} onChange={(e) => setAngkatan(e.target.value)}>
+                  <div>
+                    <DocLabel htmlFor="r-angk">Class of</DocLabel>
+                    <select id="r-angk" className="field-row font-mono" value={angkatan} onChange={(e) => setAngkatan(e.target.value)}>
                       {YEARS.map((y) => (
                         <option key={y}>{y}</option>
                       ))}
@@ -193,44 +186,35 @@ export function Login() {
                   </div>
                 </div>
                 {dept === 'Other' && (
-                  <>
-                    <label htmlFor="r-dept2" className={`${label} mt-2`}>
-                      Department name
-                    </label>
-                    <input id="r-dept2" className="field-ink" value={deptOther} onChange={(e) => setDeptOther(e.target.value)} />
-                  </>
+                  <div>
+                    <DocLabel htmlFor="r-dept2">Department name</DocLabel>
+                    <input id="r-dept2" className="field-row" value={deptOther} onChange={(e) => setDeptOther(e.target.value)} />
+                  </div>
                 )}
-                <div className="mt-2 grid grid-cols-2 gap-2.5">
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="r-pin" className={label}>
-                      4-digit PIN
-                    </label>
-                    <input id="r-pin" className="field-ink tracking-[0.5em]" {...pinProps} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <DocLabel htmlFor="r-pin">4-digit PIN</DocLabel>
+                    <input id="r-pin" className="field-row font-mono tracking-[0.5em]" {...pinProps} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="r-pin2" className={label}>
-                      Repeat PIN
-                    </label>
-                    <input id="r-pin2" className="field-ink tracking-[0.5em]" {...pinProps} value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ''))} />
+                  <div>
+                    <DocLabel htmlFor="r-pin2">Repeat PIN</DocLabel>
+                    <input id="r-pin2" className="field-row font-mono tracking-[0.5em]" {...pinProps} value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ''))} />
                   </div>
                 </div>
-                <p className="mt-1 text-[13px] text-[#5a5048]">Forget it later? Ask for a reset at the Front Office.</p>
+              </div>
+              <p className="mt-3 text-[13px] text-ink/60">Forget it later? Ask for a reset at the Front Office.</p>
+              <div className="mt-2">
                 <ErrorText onPaper>{err}</ErrorText>
-                <div className="mt-auto pt-5">
-                  <button type="submit" className="btn btn-red w-full" disabled={busy}>
-                    {busy ? <Spinner /> : 'Create passport'}
-                  </button>
-                </div>
-              </form>
-            )}
-          </motion.div>
-
-          {/* machine-readable zone, purely decorative */}
-          <p className="mt-4 overflow-hidden font-mono text-[11px] tracking-[0.12em] whitespace-nowrap text-navy/35" aria-hidden="true">
-            P&lt;FS2&lt;&lt;STUDENT&lt;BOOTH&lt;&lt;OCTOBER&lt;2026&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
-          </p>
+              </div>
+              <div className="mt-auto pt-8">{submitBtn('Create passport', busy)}</div>
+              <p className="mt-3 text-[13px] text-ink/60">Already have a passport? Just enter your NRP + PIN.</p>
+            </form>
+          )}
         </motion.div>
-      </motion.section>
-    </main>
+      </AnimatePresence>
+
+      <MRZ name={step === 'register' && nama ? nama : 'STUDENT BOOTH'} last4={nrp.slice(-4).padStart(4, '<')} className="mt-8" />
+      <PageNo n={1} />
+    </div>
   )
 }

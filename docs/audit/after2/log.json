@@ -1,0 +1,122 @@
+{
+  "log": [
+    {
+      "name": "t01-cover-to-signin",
+      "frames": 13,
+      "url": "http://localhost:5173/signin"
+    },
+    {
+      "name": "t02-signin-nrp-to-register",
+      "frames": 5,
+      "url": "http://localhost:5173/signin"
+    },
+    {
+      "name": "t03-register-to-photo",
+      "frames": 9,
+      "url": "http://localhost:5173/photo"
+    },
+    {
+      "name": "t04-photo-capture",
+      "frames": 10,
+      "url": "http://localhost:5173/photo"
+    },
+    {
+      "name": "t05-photo-use-to-onboarding",
+      "frames": 16,
+      "url": "http://localhost:5173/onboarding"
+    },
+    {
+      "name": "t06-onboarding",
+      "frames": 62,
+      "url": "http://localhost:5173/onboarding"
+    },
+    {
+      "name": "t07-onboarding-to-map",
+      "frames": 7,
+      "url": "http://localhost:5173/map"
+    },
+    {
+      "name": "t08-map-lounge-to-building",
+      "frames": 6,
+      "url": "http://localhost:5173/map"
+    },
+    {
+      "name": "t09-pin-to-popup",
+      "frames": 6,
+      "url": "http://localhost:5173/map?booth=B2"
+    },
+    {
+      "name": "t10-popup-close",
+      "frames": 6,
+      "url": "http://localhost:5173/map"
+    },
+    {
+      "name": "t11-map-to-qr",
+      "frames": 7,
+      "url": "http://localhost:5173/qr"
+    },
+    {
+      "name": "t12-stamp-moment",
+      "frames": 46,
+      "url": "http://localhost:5173/stamp/B2"
+    },
+    {
+      "name": "t13-stamp-to-resume",
+      "frames": 2,
+      "url": "http://localhost:5173/visa/B2"
+    },
+    {
+      "name": "t14-resume-close",
+      "frames": 7,
+      "url": "http://localhost:5173/map"
+    },
+    {
+      "name": "t14b-map-to-passport",
+      "frames": 5,
+      "url": "http://localhost:5173/passport"
+    },
+    {
+      "name": "t15-passport-to-exit",
+      "frames": 5,
+      "url": "http://localhost:5173/exit"
+    },
+    {
+      "name": "t16-submit-to-status",
+      "frames": 26,
+      "url": "http://localhost:5173/status"
+    },
+    {
+      "name": "t17-direct-load-passport",
+      "frames": 25,
+      "url": "http://localhost:5173/passport"
+    },
+    {
+      "name": "t18-direct-load-qr",
+      "frames": 25,
+      "url": "http://localhost:5173/qr"
+    }
+  ],
+  "notes": {
+    "popupStamp": {
+      "src": "/assets/stamps/stamp-taiwan.webp",
+      "w": 104,
+      "h": 104,
+      "natural": 320,
+      "opacity": "1",
+      "filter": "none"
+    },
+    "a1": {
+      "buttons": [
+        "Tap to open camera",
+        "Open camera",
+        "DEV",
+        "Use sample photo"
+      ],
+      "fileInput": true,
+      "fileInputVisible": true,
+      "message": null,
+      "afterUseUrl": "http://localhost:5173/onboarding",
+      "error": []
+    }
+  }
+}

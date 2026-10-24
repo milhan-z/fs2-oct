@@ -17,6 +17,20 @@ interface Ctx {
 const ParticipantCtx = createContext<Ctx>({ state: null, prog: null, reload: async () => {}, setState: () => {} })
 
 const seenKey = (pid: string) => `fs2.seenStamps.${pid}`
+const STATE_CACHE = 'fs2.cache.state'
+
+function readStateCache(): MyState | null {
+  try {
+    const raw = localStorage.getItem(STATE_CACHE)
+    return raw ? (JSON.parse(raw) as MyState) : null
+  } catch {
+    return null
+  }
+}
+
+export function clearStateCache() {
+  localStorage.removeItem(STATE_CACHE)
+}
 
 function readSeen(pid: string): string[] | null {
   try {
@@ -41,11 +55,17 @@ export function ParticipantProvider({ children }: { children: ReactNode }) {
   const loc = useLocation()
   const nav = useNavigate()
   const polling = POLL_ROUTES.some((r) => loc.pathname.startsWith(r))
-  const { data: state, reload, setData, error } = useLive(() => (api.hasSession() ? api.getMyState() : Promise.resolve(null)), [], polling ? 4000 : 0)
+  const { data: state, reload, setData, error } = useLive(() => (api.hasSession() ? api.getMyState() : Promise.resolve(null)), [], polling ? 4000 : 0, api.hasSession() ? readStateCache() : null)
+
+  // cache the last state so pages render at once on the next load (A3)
+  useEffect(() => {
+    if (state) localStorage.setItem(STATE_CACHE, JSON.stringify(state))
+  }, [state])
 
   useEffect(() => {
     if (error && (error as { code?: string }).code === 'auth') {
       api.logout()
+      clearStateCache()
       setData(null)
       nav('/signin', { replace: true })
     }

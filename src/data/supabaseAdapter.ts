@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Api } from './api'
 import { ApiError, type Content, type MyState, type ResolvedToken, type StaffHistoryItem, type StaffSession } from './types'
 import { DEPARTEMEN_ITS } from './seed'
@@ -32,12 +32,14 @@ export function supabaseAdapter(): Api {
   const url = import.meta.env.VITE_SUPABASE_URL
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY
   if (!url || !key) throw new Error('VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are not set.')
-  const sb: SupabaseClient = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
+  // supabase-js loads on the first call, so it stays out of the first-paint bundle
+  let sbPromise: Promise<SupabaseClient> | null = null
+  const client = () => (sbPromise ??= import('@supabase/supabase-js').then((m) => m.createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })))
 
   async function rpc<T>(fn: string, params: Record<string, unknown> = {}): Promise<T> {
     let res
     try {
-      res = await sb.rpc(fn, params)
+      res = await (await client()).rpc(fn, params)
     } catch {
       throw new ApiError('network', 'No connection. Try again in a moment.')
     }
@@ -72,7 +74,7 @@ export function supabaseAdapter(): Api {
     const now = Date.now()
     const missing = want.filter((p) => (photoCache.get(p)?.exp ?? 0) < now)
     if (missing.length) {
-      const { data } = await sb.functions.invoke<{ urls: Record<string, string> }>('photo-view-url', { body: { token, paths: missing } })
+      const { data } = await (await client()).functions.invoke<{ urls: Record<string, string> }>('photo-view-url', { body: { token, paths: missing } })
       for (const [p, u] of Object.entries(data?.urls ?? {})) photoCache.set(p, { url: u, exp: now + 25 * 60_000 })
     }
     return new Map(want.flatMap((p) => (photoCache.has(p) ? [[p, photoCache.get(p)!.url] as const] : [])))
@@ -83,9 +85,9 @@ export function supabaseAdapter(): Api {
   }
 
   async function signedUpload(body: Record<string, unknown>, bucket: string, file: Blob, contentType: string) {
-    const { data, error } = await sb.functions.invoke<{ path: string; uploadToken: string; publicUrl?: string; error?: string; message?: string }>('photo-upload-url', { body })
+    const { data, error } = await (await client()).functions.invoke<{ path: string; uploadToken: string; publicUrl?: string; error?: string; message?: string }>('photo-upload-url', { body })
     if (error || !data?.path) throw new ApiError('upload', 'Could not prepare the upload. Please try again.')
-    const up = await sb.storage.from(bucket).uploadToSignedUrl(data.path, data.uploadToken, file, { contentType })
+    const up = await (await client()).storage.from(bucket).uploadToSignedUrl(data.path, data.uploadToken, file, { contentType })
     if (up.error) throw new ApiError('upload', 'Photo upload failed. Please try again.')
     return data
   }

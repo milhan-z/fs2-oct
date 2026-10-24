@@ -1,0 +1,16 @@
+{
+  "log": [],
+  "notes": {
+    "a1": {
+      "buttons": [
+        "Use sample photo",
+        "DEV"
+      ],
+      "fileInput": true,
+      "fileInputVisible": true,
+      "message": null,
+      "afterUseUrl": "http://localhost:5173/onboarding",
+      "error": []
+    }
+  }
+}

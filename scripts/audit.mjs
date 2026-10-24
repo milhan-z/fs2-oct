@@ -70,7 +70,8 @@ try {
   await page.getByLabel('Repeat PIN').fill('1234')
   await screen('03-register')
   await transition('t03-register-to-photo', () => page.getByRole('button', { name: 'Create passport' }).click(), 1200)
-  await wait(800)
+  await page.getByRole('dialog', { name: 'Attendance photo camera' }).waitFor({ timeout: 4000 })
+  await wait(900)
   await screen('04-photo')
   await transition('t04-photo-capture', () => page.getByRole('button', { name: 'Take photo' }).click(), 1000)
   await screen('05-photo-taken')
@@ -92,7 +93,7 @@ try {
     return img ? { src: img.getAttribute('src'), w: img.clientWidth, h: img.clientHeight, natural: img.naturalWidth, opacity: getComputedStyle(img).opacity, filter: getComputedStyle(img).filter } : null
   })
   await transition('t10-popup-close', () => page.getByRole('button', { name: 'Close', exact: true }).click(), 700)
-  await transition('t11-map-to-qr', () => page.getByRole('link', { name: 'Show QR' }).click(), 800)
+  await transition('t11-map-to-qr', () => page.getByRole('button', { name: 'QR', exact: true }).click(), 800)
   await screen('10-qr')
   await transition('t12-stamp-moment', () => dev('Stamp B2'), 5500)
   await screen('11-stamp')
@@ -101,7 +102,8 @@ try {
   await page.getByLabel(/Point 1/).fill('The international internship route is a realistic first step abroad.')
   await wait(1800)
   await screen('12b-resume-saved')
-  await transition('t14-resume-to-passport', () => page.getByRole('button', { name: 'Done' }).click(), 800)
+  await transition('t14-resume-close', () => page.getByRole('button', { name: 'Done' }).click(), 800)
+  await transition('t14b-map-to-passport', () => page.getByRole('button', { name: 'Passport', exact: true }).click(), 900)
   await screen('13-passport')
   await page.screenshot({ path: `${OUT}/screens/13b-passport-full.png`, fullPage: true })
   for (const b of ['Stamp B1', 'Stamp B3', 'Stamp B4']) {
@@ -112,15 +114,15 @@ try {
     await page.waitForURL('**/map')
   }
   await dev('Auto-fill notes')
-  await page.getByRole('link', { name: 'Passport' }).click()
+  await page.getByRole('button', { name: 'Passport', exact: true }).click()
   await wait(700)
-  await transition('t15-passport-to-exit', () => page.getByRole('button', { name: 'Go to Exit page' }).click(), 800)
+  await transition('t15-passport-to-exit', () => page.getByRole('button', { name: /Answer & submit/ }).click(), 800)
   await page.getByRole('radio').nth(4).click()
   await page.getByRole('radio').nth(8).click()
   await wait(500)
   await screen('14-exit')
   await page.screenshot({ path: `${OUT}/screens/14b-exit-full.png`, fullPage: true })
-  await transition('t16-submit-to-status', () => page.getByRole('button', { name: 'Submit' }).click(), 3200)
+  await transition('t16-submit-to-status', () => page.getByRole('button', { name: 'Submit', exact: true }).click(), 3200)
   await screen('15-status')
 
   // A3: open a deep route directly (fresh load)
@@ -151,7 +153,7 @@ try {
   await p2.getByLabel('Repeat PIN').fill('1234')
   await p2.getByRole('button', { name: 'Create passport' }).click()
   await p2.waitForURL('**/photo')
-  await p2.waitForTimeout(2500)
+  await p2.waitForTimeout(3000)
   await p2.screenshot({ path: `${OUT}/screens/a1-no-camera.png` })
   notes.a1 = await p2.evaluate(() => ({
     buttons: [...document.querySelectorAll('button')].map((b) => b.textContent?.trim()).filter(Boolean),

@@ -31,7 +31,7 @@ Mode mock menyimpan semua data di **browser itu saja** (localStorage). Tidak ada
 6. `/admin` (fs2admin) → Pengajuan → Setujui / Kembalikan → Stamp4It → Ekspor XLSX.
 
 ## Rute
-Peserta: `/` (sampul) → `/signin` → `/photo` → `/onboarding` → `/map` · `/qr` · `/passport` · `/visa/:booth` · `/exit` · `/status` · `/guide`.
+Peserta: `/` (sampul) → `/signin` → `/photo` (kamera polaroid pop-up) → `/onboarding` → halaman penuh `/map` · `/passport` · `/status` · `/guide`. Pop-up di atas halaman: `/qr`, `/visa/:booth`, `/stamp/:booth`, `/exit`. Bingkai buku hanya untuk sampul, sign-in, dan foto. Perbandingan sebelum/sesudah: `docs/BEFORE-AFTER.md`.
 Petugas: `/staff/<slug>`. Admin: `/admin` (`/admin/submissions`, `/participants`, `/content`, `/settings`, `/export`).
 
 ## Aset GSM (dari Figma FS2 › "FS2 Oct 26")
@@ -61,7 +61,17 @@ npm i -g vercel
 vercel login
 vercel
 ```
-Saat ditanya, framework **Vite**, build `npm run build`, output `dist`. Set env `VITE_DATA_MODE=mock` untuk demo. `vercel.json` sudah berisi rewrite SPA.
+Saat ditanya, framework **Vite**, build `npm run build`, output `dist`. `vercel.json` sudah berisi rewrite SPA.
+
+Environment Variables di Vercel (Project → Settings → Environment Variables):
+
+| Nama | Nilai | Dari mana |
+| --- | --- | --- |
+| `VITE_DATA_MODE` | `supabase` (atau `mock` untuk demo tanpa backend) | — |
+| `VITE_SUPABASE_URL` | `https://hkwylhvxxemminnbzlcd.supabase.co` | Supabase → Project Settings → API / Data API |
+| `VITE_SUPABASE_ANON_KEY` | kunci **anon / publishable** | Supabase → Project Settings → API Keys (sama dengan di `.env.supabase.local`) |
+
+Jangan pernah memasukkan service role key / secret key atau sandi database ke Vercel. Setelah mengubah env, lakukan **Redeploy**.
 
 ## Backend Supabase (M3)
 | Bagian | Lokasi |
@@ -99,4 +109,5 @@ Catatan: `seed.sql` menimpa isi booth/pemateri; jalankan sekali saat awal saja (
 ## Status
 - M0–M2 (mode mock): selesai.
 - M3: selesai — diterapkan ke Supabase, lolos uji SQL lokal (59 cek) & uji end-to-end ke backend asli.
-- M4 (uji, Lighthouse, produksi): belum.
+- Redesign UI & transisi (DESIGN.md, AUDIT.md): selesai — lihat `docs/BEFORE-AFTER.md`.
+- M4: uji alur mock & Supabase lolos; tinggal uji coba ke PIC & gladi 27 Okt.

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /** Loads data with `fn`, re-runs on mock-db changes and optionally on an interval. */
-export function useLive<T>(fn: () => Promise<T>, deps: unknown[], intervalMs = 0) {
-  const [data, setData] = useState<T | null>(null)
+export function useLive<T>(fn: () => Promise<T>, deps: unknown[], intervalMs = 0, initial: T | null = null) {
+  const [data, setData] = useState<T | null>(initial)
   const [error, setError] = useState<Error | null>(null)
   const fnRef = useRef(fn)
   fnRef.current = fn

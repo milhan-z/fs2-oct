@@ -2,47 +2,28 @@ import { MotionConfig } from 'motion/react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { lazy, Suspense } from 'react'
 import { ContentProvider } from './providers'
-import { ParticipantLayout, RequireParticipant } from './layouts'
+import { ParticipantLayout } from './layouts'
 import { DevPanel } from '../components/DevPanel'
-import { Cover } from '../screens/participant/Cover'
-import { Login } from '../screens/participant/Login'
-import { Photo } from '../screens/participant/Photo'
-import { Onboarding } from '../screens/participant/Onboarding'
-import { MapScreen } from '../screens/participant/MapScreen'
-import { QrScreen } from '../screens/participant/QrScreen'
-import { StampMoment } from '../screens/participant/StampMoment'
-import { Passport } from '../screens/participant/Passport'
-import { Visa } from '../screens/participant/Visa'
-import { Exit } from '../screens/participant/Exit'
-import { Status } from '../screens/participant/Status'
-import { Guide } from '../screens/participant/Guide'
 
 const StaffHome = lazy(() => import('../screens/staff/StaffHome'))
 const StaffBooth = lazy(() => import('../screens/staff/StaffBooth'))
 const Admin = lazy(() => import('../screens/admin/Admin'))
+
+// Participant routes are pages of one Booklet (src/booklet): the layout renders the book, which
+// picks the page from the URL. The routes are listed so unknown paths still fall back to "/".
+const PARTICIPANT_PATHS = ['/', '/signin', '/guide', '/photo', '/onboarding', '/map', '/qr', '/stamp/:boothId', '/passport', '/visa/:boothId', '/exit', '/status']
 
 export function App() {
   return (
     <MotionConfig reducedMotion="user">
       <ContentProvider>
         <BrowserRouter>
-          <Suspense fallback={<div className="min-h-dvh bg-bg-0" />}>
+          <Suspense fallback={<div className="min-h-dvh bg-night-0" />}>
             <Routes>
               <Route element={<ParticipantLayout />}>
-                <Route path="/" element={<Cover />} />
-                <Route path="/signin" element={<Login />} />
-                <Route path="/guide" element={<Guide />} />
-                <Route element={<RequireParticipant />}>
-                  <Route path="/photo" element={<Photo />} />
-                  <Route path="/onboarding" element={<Onboarding />} />
-                  <Route path="/map" element={<MapScreen />} />
-                  <Route path="/qr" element={<QrScreen />} />
-                  <Route path="/stamp/:boothId" element={<StampMoment />} />
-                  <Route path="/passport" element={<Passport />} />
-                  <Route path="/visa/:boothId" element={<Visa />} />
-                  <Route path="/exit" element={<Exit />} />
-                  <Route path="/status" element={<Status />} />
-                </Route>
+                {PARTICIPANT_PATHS.map((p) => (
+                  <Route key={p} path={p} element={null} />
+                ))}
               </Route>
               <Route path="/staff" element={<StaffHome />} />
               <Route path="/staff/:slug" element={<StaffBooth />} />

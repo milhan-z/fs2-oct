@@ -1,23 +1,29 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion, useAnimate, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useNavigate } from 'react-router'
 import { useContent } from '../../app/providers'
 import { useParticipant } from '../../app/participant'
-import { Icon, StampImg } from '../../components/decor'
-import { BackHeader, Loading, useOnline } from '../../components/ui'
+import { useOnline } from '../../components/ui'
 import { api } from '../../data/api'
 import { getDraft, setDraft } from '../../data/drafts'
 import { poinOk, wordCount } from '../../data/rules'
 import { fmtTime } from '../../data/time'
+import { sfx, vibrate } from '../../app/sound'
+import { InkIcon } from '../../booklet/icons'
+import { DocLabel, Folio, InkStamp, PageNo, PageSkeleton, Tape } from '../../booklet/print'
 
 type SaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'offline' | 'error'
 
 const PLACEHOLDERS = ['Something new you learned from the speaker', 'A tip or story that stuck with you', 'What do you want to try next?']
 
-/** P7 — visa page + 3-point resume with debounced autosave and local drafts (MOTION #8). */
-export function Visa() {
-  const { boothId = '' } = useParams()
+/**
+ * P5 + P7 — one visa page per booth (E1). When the officer confirms, the stamp lands right here
+ * (MOTION #4) and the three note lines sit under it: write now, or come back later — every line
+ * autosaves to this page (debounced) and to a local draft while offline (MOTION #8).
+ */
+export function Visa({ boothId, stampMode, onClose }: { boothId: string; stampMode: boolean; onClose: () => void }) {
   const nav = useNavigate()
+  const reduce = useReducedMotion()
   const { content } = useContent()
   const { state, prog, reload } = useParticipant()
   const online = useOnline()
@@ -26,6 +32,10 @@ export function Visa() {
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const timer = useRef<number>(0)
   const pid = state?.participant.id
+  const [paper, animatePaper] = useAnimate()
+  const [landed, setLanded] = useState(!stampMode || !!reduce)
+  const [moment] = useState(stampMode) // stays true for this visit of the page, even after "Write now"
+  const firstLine = useRef<HTMLTextAreaElement>(null)
 
   // init from the newer of local draft / server copy
   useEffect(() => {
@@ -42,6 +52,19 @@ export function Visa() {
     }
   }, [state, boothId, poin])
 
+  // the stamp lands: one press, ink, the page shakes twice
+  useEffect(() => {
+    if (!stampMode || reduce) return
+    const t = setTimeout(async () => {
+      setLanded(true)
+      sfx.thunk()
+      vibrate(80)
+      if (paper.current) await animatePaper(paper.current, { x: [0, -3, 3, -3, 3, 0] }, { duration: 0.28 })
+    }, 650)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const push = async (p: [string, string, string]) => {
     if (!pid) return
     if (!navigator.onLine) return setSave('offline')
@@ -57,7 +80,6 @@ export function Visa() {
     }
   }
 
-  // retry when connectivity returns
   useEffect(() => {
     if (online && (save === 'offline' || save === 'pending') && poin) push(poin)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -65,21 +87,16 @@ export function Visa() {
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
-  if (!content || !state || !prog || !poin) return <Loading />
+  if (!content || !state || !prog || !poin) return <PageSkeleton />
   const booth = content.booths.find((b) => b.id === boothId)
+  if (!booth) return <PageSkeleton />
   const visit = state.visits.find((v) => v.boothId === boothId)
-  if (!booth || !visit) {
-    return (
-      <main className="screen-bg flex min-h-dvh flex-col">
-        <BackHeader kicker="Visa" to="/passport" />
-        <p className="p-6 text-muted">This booth is not stamped yet. Show your QR to the booth officer first.</p>
-      </main>
-    )
-  }
   const speakers = content.speakers.filter((s) => s.boothId === boothId)
   const min = content.rules.min_kata_per_poin
   const okCount = poin.filter((p) => poinOk(p, min)).length
   const locked = prog.locked
+  const total = content.booths.length
+  const no = String(booth.sort).padStart(2, '0')
 
   const change = (i: number, v: string) => {
     const next = [...poin] as [string, string, string]
@@ -95,7 +112,15 @@ export function Visa() {
     clearTimeout(timer.current)
     const d = getDraft(state.participant.id, boothId)
     if (d?.dirty) await push(d.poin)
-    nav('/passport')
+    onClose()
+  }
+
+  const writeNow = () => {
+    nav(`/visa/${booth.id}`, { replace: true })
+    setTimeout(() => {
+      firstLine.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
+      firstLine.current?.focus({ preventScroll: true })
+    }, 60)
   }
 
   const statusText: Record<SaveState, string> = {
@@ -109,78 +134,135 @@ export function Visa() {
   const savedIcon = save === 'saved' || (save === 'idle' && savedAt)
 
   return (
-    <main className="screen-bg flex min-h-dvh flex-col pb-5">
-      <BackHeader kicker={`Visa · ${booth.nama} booth`} onBack={finish} />
-      <div className="flex gap-3 px-5 pt-2">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-[22px] leading-tight font-extrabold text-white">{speakers.map((s) => s.nama).join(' & ') || booth.nama}</h1>
-          {speakers[0] && (
-            <p className="mt-1 text-[14px] leading-snug text-muted">
-              {speakers[0].program} · {speakers[0].universitas}
-            </p>
-          )}
-          <span className="tape mt-3 text-[14px]">Stamped {fmtTime(visit.confirmedAt)} · Lounge</span>
-        </div>
-        <StampImg src={booth.stamp} alt={`${booth.nama} stamp`} className="h-[88px] w-[88px] flex-none -rotate-6" />
-      </div>
-
-      <section className="relative mx-4 mt-6 rounded-[10px] bg-paper px-4 pt-5 pb-4 text-ink shadow-xl" aria-labelledby="resume-title">
-        <span className="absolute -top-3 right-8 h-6 w-28 rotate-2 bg-yellow/85" aria-hidden="true" />
-        <div className="flex items-baseline justify-between">
-          <h2 id="resume-title" className="font-serif text-[16px] font-bold">
-            {content.rules.poin_per_resume} things you learned
-          </h2>
-          <span className="text-[16px] font-extrabold text-red" aria-live="polite">
-            {okCount}/{content.rules.poin_per_resume}
-          </span>
-        </div>
-        {locked && <p className="mt-2 rounded-lg bg-[#efe6d6] px-3 py-2 text-[14px]">Submission sent — notes are locked.</p>}
-
-        {poin.map((p, i) => {
-          const ok = poinOk(p, min)
-          const wc = wordCount(p)
-          return (
-            <div key={i} className="mt-4">
-              <label htmlFor={`poin-${i}`} className={`flex items-center gap-1 text-[14px] font-bold ${ok ? 'text-[#2e7d32]' : ''}`}>
-                Point {i + 1}
-                <AnimatePresence>
-                  {ok && (
-                    <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={{ duration: 0.2 }}>
-                      <Icon.Check className="h-4 w-4" />
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-                <span className="ml-auto text-[12px] font-normal text-[#7a7068]">{ok ? '' : `${wc}/${min} words`}</span>
-              </label>
-              <textarea
-                id={`poin-${i}`}
-                rows={3}
-                readOnly={locked}
-                value={p}
-                placeholder={PLACEHOLDERS[i]}
-                onChange={(e) => change(i, e.target.value)}
-                className="field-paper mt-1.5 resize-none transition-colors"
-                style={ok ? { borderColor: '#2e7d32', borderWidth: 2 } : undefined}
-              />
-            </div>
-          )
-        })}
-
-        <p className={`mt-3 flex items-center gap-1.5 text-[14px] ${save === 'offline' || save === 'error' ? 'text-[#a15c00]' : 'text-[#2e7d32]'}`} role="status">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.span key={savedIcon ? 'check' : 'cloud'} initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} transition={{ duration: 0.2 }}>
-              {savedIcon ? <Icon.Check className="h-4 w-4" /> : <Icon.Cloud className="h-4 w-4" />}
-            </motion.span>
-          </AnimatePresence>
-          {statusText[save]}
-        </p>
-      </section>
-
-      <div className="mt-auto px-5 pt-6">
-        <button type="button" onClick={finish} className="btn btn-red w-full">
-          Done
+    <div className="relative flex min-h-full flex-col px-6 pt-3 pb-12">
+      <div className="flex items-center gap-1">
+        <button type="button" aria-label="Close" onClick={finish} className="-ml-3 flex h-11 w-11 items-center justify-center text-ink/80">
+          <InkIcon.Close className="h-5 w-5" />
         </button>
+        <Folio left={`Visa · ${booth.nama} booth`} serial={no} className="min-w-0 flex-1" />
       </div>
-    </main>
+
+      {/* the visa: thin printed double frame; the stamp lands inside */}
+      <motion.section ref={paper} className="relative mt-4 border-[3px] border-double border-ink/30 px-4 pt-4 pb-5" aria-label={`${booth.nama} visa`}>
+        {moment && (
+          <div className="mb-3">
+            <p className="font-mono text-[11px] tracking-[0.2em] text-[#8a5a12] uppercase">Entry approved</p>
+            <AnimatePresence>
+              {landed && (
+                <motion.h2
+                  className="mt-1 font-serif text-[30px] leading-[34px] font-bold text-stamp"
+                  style={{ textShadow: '0 0 14px rgba(232,32,32,.35)' }}
+                  initial={reduce ? { opacity: 0 } : { opacity: 0 }}
+                  animate={reduce ? { opacity: 1 } : { opacity: [0, 1, 0.35, 1, 0.6, 1] }}
+                  transition={{ duration: 0.7 }}
+                >
+                  Passport stamped!
+                </motion.h2>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
+        {/* the stamp lands in the middle of the visa */}
+        <div className="relative mx-auto h-[136px] w-[136px]">
+          {/* ink-landing glow (one of the two allowed glows) */}
+          <AnimatePresence>
+            {moment && landed && !reduce && (
+              <motion.span className="absolute inset-0 rounded-full bg-[#e82020]" initial={{ opacity: 0.45, scale: 0.8 }} animate={{ opacity: 0, scale: 1.4 }} transition={{ duration: 0.5 }} aria-hidden="true" />
+            )}
+          </AnimatePresence>
+          <motion.div
+            initial={moment && !reduce ? { y: -260, scale: 1.6, opacity: 0, filter: 'blur(3px)' } : false}
+            animate={moment && !landed ? {} : { y: 0, scale: [1.6, 0.94, 1], opacity: 1, filter: 'blur(0px)' }}
+            transition={reduce ? { duration: 0.12 } : { type: 'spring', stiffness: 500, damping: 28 }}
+          >
+            <InkStamp src={booth.stamp} seed={booth.id} size={136} alt={`${booth.nama} stamp`} pending={!visit} large />
+          </motion.div>
+        </div>
+        {visit && (
+          <div className="mt-2 text-center">
+            <Tape className="font-mono">Stamped {fmtTime(visit.confirmedAt)} · Lounge</Tape>
+          </div>
+        )}
+
+        <h1 className="mt-5 font-serif text-[24px] leading-[29px] font-bold">{speakers.map((s) => s.nama).join(' & ') || booth.nama}</h1>
+        {speakers[0] && (
+          <p className="mt-1.5 text-[14px] leading-snug text-ink/70">
+            {speakers[0].program} · {speakers[0].universitas}
+          </p>
+        )}
+
+        {moment && landed && stampMode && (
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduce ? 0 : 0.5, duration: 0.25 }}>
+            <p className="mt-5 text-[15px] leading-[22px] text-ink/75">
+              {prog.stampCount} of {total} visas stamped. Write your notes now, or come back to this page later.
+            </p>
+            <div className="mt-4 flex items-center gap-3">
+              <motion.button type="button" whileTap={{ scale: 0.98 }} transition={{ duration: 0.06 }} onClick={writeNow} className="btn btn-line flex-1">
+                Write now
+              </motion.button>
+              <motion.button type="button" whileTap={{ scale: 0.98 }} transition={{ duration: 0.06 }} onClick={() => nav('/map')} className="btn btn-primary flex-1">
+                {prog.stampCount >= total ? 'Back to map' : 'Next booth'}
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </motion.section>
+
+      {/* notes written on the visa page (E1) */}
+      {visit ? (
+        <section className="mt-8" aria-labelledby="resume-title">
+          <div className="flex items-baseline justify-between">
+            <h2 id="resume-title" className="font-serif text-[20px] font-bold">
+              {content.rules.poin_per_resume} things you brought back
+            </h2>
+            <span className="font-mono text-[16px] font-bold text-stamp" aria-live="polite">
+              {okCount}/{content.rules.poin_per_resume}
+            </span>
+          </div>
+          {locked && <p className="mt-2 text-[14px] text-ink/70 italic">Submission sent — notes are locked.</p>}
+
+          {poin.map((p, i) => {
+            const ok = poinOk(p, min)
+            const wc = wordCount(p)
+            return (
+              <div key={i} className="mt-5">
+                <div className="flex items-center gap-1.5">
+                  <DocLabel htmlFor={`poin-${i}`} className={ok ? '!text-[#2e7d32]' : ''}>
+                    Point {i + 1}
+                  </DocLabel>
+                  {ok && <InkIcon.Check className="h-3.5 w-3.5 text-[#2e7d32]" />}
+                  <span className="ml-auto font-mono text-[12px] text-ink/50">{ok ? '' : `${wc}/${min} words`}</span>
+                </div>
+                <textarea
+                  ref={i === 0 ? firstLine : undefined}
+                  id={`poin-${i}`}
+                  rows={3}
+                  readOnly={locked}
+                  value={p}
+                  placeholder={PLACEHOLDERS[i]}
+                  onChange={(e) => change(i, e.target.value)}
+                  className="ruled mt-1"
+                />
+              </div>
+            )
+          })}
+
+          <p className={`mt-3 flex items-center gap-1.5 text-[13px] ${save === 'offline' || save === 'error' ? 'text-[#8a5a12]' : 'text-[#2e7d32]'}`} role="status">
+            {savedIcon ? <InkIcon.Check className="h-4 w-4" /> : <InkIcon.Cloud className="h-4 w-4" />}
+            {statusText[save]}
+          </p>
+
+          <div className="mt-8">
+            <motion.button type="button" whileTap={{ scale: 0.98 }} transition={{ duration: 0.06 }} onClick={finish} className="btn btn-primary w-full">
+              Done
+            </motion.button>
+          </div>
+        </section>
+      ) : (
+        <p className="mt-6 text-[15px] text-ink/70">This visa is still waiting for its stamp. Show your QR permit to the booth officer first.</p>
+      )}
+      <PageNo n={4 + booth.sort} />
+    </div>
   )
 }

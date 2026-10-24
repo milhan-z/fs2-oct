@@ -1,82 +1,36 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useState } from 'react'
-import { Navigate, NavLink, useLocation, useOutlet } from 'react-router'
+import { Navigate, useLocation } from 'react-router'
 import { api } from '../data/api'
-import { ParticipantProvider, useParticipant } from './participant'
-import { screenVariants } from '../motion/presets'
-import { Icon } from '../components/decor'
+import { ParticipantProvider } from './participant'
+import { Booklet } from '../booklet/Booklet'
+import { lazy, Suspense } from 'react'
 
-const NAV_ROUTES = ['/map', '/passport']
+const Onboarding = lazy(() => import('../screens/participant/Onboarding').then((m) => ({ default: m.Onboarding })))
 
-/** Keeps the outgoing route rendered while it animates out. */
-function FrozenOutlet() {
-  const outlet = useOutlet()
-  const [frozen] = useState(outlet)
-  return frozen
-}
-
+/**
+ * Participant shell: the Night stage with one passport (Booklet) on it. Onboarding is the only
+ * full-screen Night moment — the book slides down out of view and comes back up afterwards.
+ */
 export function ParticipantLayout() {
   const loc = useLocation()
-  const showNav = NAV_ROUTES.includes(loc.pathname)
-  // screens that run their own full-screen choreography skip the generic slide
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [loc.pathname])
-  // cover → sign-in share the passport page (layoutId), so neither route fades as a whole
-  const shared = loc.pathname === '/' || loc.pathname === '/signin'
-  const plain = shared || loc.pathname.startsWith('/stamp') || loc.pathname === '/onboarding'
+  const onboarding = loc.pathname === '/onboarding'
   return (
     <ParticipantProvider>
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col overflow-x-clip bg-bg-0">
-        <AnimatePresence mode="popLayout" initial={false}>
-          <motion.div
-            key={loc.pathname}
-            className="flex min-h-dvh flex-1 flex-col"
-            variants={plain ? undefined : screenVariants}
-            initial={shared ? false : plain ? { opacity: 0 } : 'initial'}
-            animate={plain ? { opacity: 1 } : 'animate'}
-            exit={shared ? { opacity: 0, transition: { delay: 0.3, duration: 0.2 } } : plain ? { opacity: 0 } : 'exit'}
-            style={{ paddingBottom: showNav ? 84 : 0 }}
-          >
-            <FrozenOutlet />
-          </motion.div>
+      <div className="mat-night fixed inset-0 overflow-hidden">
+        {/* the single red light source: a glow leaking from a crack below */}
+        <div className="pointer-events-none absolute -bottom-28 left-1/2 h-56 w-[130%] -translate-x-1/2 rounded-[50%] bg-[#8f1d17] opacity-25 blur-3xl" aria-hidden="true" />
+        <AnimatePresence initial={false}>
+          {onboarding ? (
+            <motion.div key="onboarding" className="absolute inset-0 mx-auto max-w-[430px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+              <Suspense fallback={null}>{api.hasSession() ? <Onboarding /> : <Navigate to="/signin" replace />}</Suspense>
+            </motion.div>
+          ) : (
+            <motion.div key="book" className="absolute inset-0" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
+              <Booklet />
+            </motion.div>
+          )}
         </AnimatePresence>
-        {showNav && <BottomNav />}
       </div>
     </ParticipantProvider>
-  )
-}
-
-/** Guards: needs a session, and the attendance photo before anything else. */
-export function RequireParticipant() {
-  const loc = useLocation()
-  const outlet = useOutlet()
-  const { state } = useParticipant()
-  if (!api.hasSession()) return <Navigate to="/signin" replace />
-  if (state && !state.participant.photo && loc.pathname !== '/photo') return <Navigate to="/photo" replace />
-  return outlet
-}
-
-function BottomNav() {
-  const item = 'flex min-h-12 w-[72px] flex-col items-center gap-[3px] text-[12px]'
-  return (
-    <nav aria-label="Main navigation" className="fixed bottom-0 left-1/2 z-30 flex h-[84px] w-full max-w-[430px] -translate-x-1/2 items-center justify-around border-t border-[#3a1a1c] bg-bg-0 px-6 pb-[env(safe-area-inset-bottom)]">
-      <NavLink to="/map" className={({ isActive }) => `${item} ${isActive ? 'font-extrabold text-yellow' : 'text-muted'}`}>
-        <Icon.Map className="h-[22px] w-[22px]" />
-        Map
-      </NavLink>
-      <NavLink
-        to="/qr"
-        aria-label="Show QR"
-        className="-mt-9 flex h-[68px] w-[68px] flex-col items-center justify-center rounded-full border-4 border-bg-0 bg-red text-[11px] font-extrabold text-white shadow-[0_0_22px_rgba(210,43,38,0.55)]"
-      >
-        <Icon.Qr className="h-6 w-6" />
-        QR
-      </NavLink>
-      <NavLink to="/passport" className={({ isActive }) => `${item} ${isActive ? 'font-extrabold text-yellow' : 'text-muted'}`}>
-        <Icon.Passport className="h-[22px] w-[22px]" />
-        Passport
-      </NavLink>
-    </nav>
   )
 }
