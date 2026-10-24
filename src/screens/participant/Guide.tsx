@@ -14,6 +14,7 @@ export function Guide() {
   const nav = useNavigate()
   const { content } = useContent()
   const [sound, setSound] = useState(soundEnabled())
+  const [playing, setPlaying] = useState(false)
   const signOut = useSignOut()
   if (!content) return <PageSkeleton />
   const { rules, settings, event } = content
@@ -45,7 +46,27 @@ export function Guide() {
 
       <h1 className="page-title mt-5">How your passport works</h1>
 
-      <ol className="mt-6 flex flex-col gap-3 text-[15px] leading-[22px]">
+      <section className="mt-5" aria-label="Video tutorial">
+        <div className="relative mx-auto aspect-[9/16] w-full max-w-[240px] overflow-hidden rounded-[4px] bg-night-0 shadow-[var(--shadow-contact)]">
+          {playing ? (
+            <video className="h-full w-full" src="/video/fs2-tutorial-vertical.mp4" poster="/video/fs2-tutorial-vertical-poster.jpg" controls autoPlay playsInline preload="auto" aria-label="FS² 30-second tutorial" />
+          ) : (
+            <button type="button" onClick={() => setPlaying(true)} aria-label="Watch the 30-second tutorial" className="group absolute inset-0 block h-full w-full">
+              <img src="/video/fs2-tutorial-vertical-poster.jpg" alt="" className="h-full w-full object-cover" loading="lazy" />
+              <span className="absolute inset-0 bg-night-0/35" aria-hidden="true" />
+              <span className="absolute top-1/2 left-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-stamp text-white shadow-[0_0_30px_rgba(224,48,42,.7)]" aria-hidden="true">
+                <svg viewBox="0 0 24 24" className="ml-1 h-8 w-8" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </span>
+            </button>
+          )}
+        </div>
+        <p className="mt-2 text-center text-[14px] font-semibold">Watch the 30-second tutorial</p>
+        <p className="text-center text-[12px] text-ink/60">With sound · English</p>
+      </section>
+
+      <ol className="mt-8 flex flex-col gap-3 text-[15px] leading-[22px]">
         {steps.map((t, i) => (
           <li key={i} className="grid grid-cols-[28px_1fr] gap-2">
             <span className="pt-px font-mono text-[13px] font-bold text-stamp">{String(i + 1).padStart(2, '0')}</span>
