@@ -879,9 +879,10 @@ export const mockDev = {
         })
       })
       if (k === 4) {
-        db.answers.push({ participantId: id, questionId: 'q1', nilaiInt: 4 + (i % 2), nilaiTeks: null })
-        db.answers.push({ participantId: id, questionId: 'q2', nilaiInt: 3 + (i % 3), nilaiTeks: null })
-        db.answers.push({ participantId: id, questionId: 'q3', nilaiInt: null, nilaiTeks: 'Add a longer Q&A session.' })
+        db.content.questions.forEach((q, k) => {
+          if (q.tipe === 'skala_1_5') db.answers.push({ participantId: id, questionId: q.id, nilaiInt: 3 + ((i + k) % 3), nilaiTeks: null })
+          else if (q.wajib || i % 2 === 0) db.answers.push({ participantId: id, questionId: q.id, nilaiInt: null, nilaiTeks: 'Add a longer Q&A session.' })
+        })
         db.submissions.push({
           id: rid(8),
           participantId: id,

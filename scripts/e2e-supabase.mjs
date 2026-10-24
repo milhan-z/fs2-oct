@@ -150,10 +150,12 @@ try {
   await shot(staff, '05-staff-history')
 
   await page.goto(`${BASE}/exit`)
-  await page.getByRole('radio').nth(4).click()
-  await wait(600)
-  await page.getByRole('radio').nth(3).click()
-  await wait(600)
+  for (let k = 0; k < 4; k++) {
+    await page.getByRole('radio').nth(4).click()
+    await wait(600)
+  }
+  await page.getByLabel('Criticism and Suggestions for Material').fill('-')
+  await wait(500)
   await wait(1200)
   await page.getByRole('button', { name: 'Submit', exact: true }).click()
   await page.waitForURL('**/status', { timeout: 10000 })

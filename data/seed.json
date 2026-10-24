@@ -194,25 +194,212 @@
   ],
   "feedback": [
     {
-      "id": "q1",
-      "wajib": true,
+      "id": "m1",
+      "teks": "Completeness and Clarity of Material",
       "tipe": "skala_1_5",
-      "teks": "Overall, how was your FS² experience?",
-      "placeholder": true
+      "wajib": true,
+      "section": "Material feedback",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
     },
     {
-      "id": "q2",
-      "wajib": true,
+      "id": "m2",
+      "teks": "The Material is Easy to Understand",
       "tipe": "skala_1_5",
-      "teks": "How useful were the booth sessions for your study plans?",
-      "placeholder": true
+      "wajib": true,
+      "section": "Material feedback",
+      "labelLow": "Strongly disagree",
+      "labelHigh": "Strongly agree",
+      "placeholder": false
     },
     {
-      "id": "q3",
-      "wajib": false,
+      "id": "m3",
+      "teks": "Benefit from the Material",
+      "tipe": "skala_1_5",
+      "wajib": true,
+      "section": "Material feedback",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "m4",
+      "teks": "Material Quality",
+      "tipe": "skala_1_5",
+      "wajib": true,
+      "section": "Material feedback",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "m5",
+      "teks": "Criticism and Suggestions for Material",
       "tipe": "teks",
-      "teks": "Suggestions for the next event",
-      "placeholder": true
+      "wajib": true,
+      "section": "Material feedback",
+      "placeholder": false
+    },
+    {
+      "id": "b1-presentation",
+      "teks": "Way of Presentation",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #1 · Rahmat Agussalim · South Korea",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b1-scope",
+      "teks": "Clearly Defined Content Scope",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #1 · Rahmat Agussalim · South Korea",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b1-interactive",
+      "teks": "Interactive Presentation",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #1 · Rahmat Agussalim · South Korea",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b1-time",
+      "teks": "Effective and Efficient Use of Time",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #1 · Rahmat Agussalim · South Korea",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b2-presentation",
+      "teks": "Way of Presentation",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #2 · Tegar Anugrah Firdaus · Taiwan",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b2-scope",
+      "teks": "Clearly Defined Content Scope",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #2 · Tegar Anugrah Firdaus · Taiwan",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b2-interactive",
+      "teks": "Interactive Presentation",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #2 · Tegar Anugrah Firdaus · Taiwan",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b2-time",
+      "teks": "Effective and Efficient Use of Time",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #2 · Tegar Anugrah Firdaus · Taiwan",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b3-presentation",
+      "teks": "Way of Presentation",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #3 · Zahrina Nur Amalina Syamsudin · Germany",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b3-scope",
+      "teks": "Clearly Defined Content Scope",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #3 · Zahrina Nur Amalina Syamsudin · Germany",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b3-interactive",
+      "teks": "Interactive Presentation",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #3 · Zahrina Nur Amalina Syamsudin · Germany",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b3-time",
+      "teks": "Effective and Efficient Use of Time",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #3 · Zahrina Nur Amalina Syamsudin · Germany",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b4-presentation",
+      "teks": "Way of Presentation",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #4 · Booth 4 · speaker to be announced",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b4-scope",
+      "teks": "Clearly Defined Content Scope",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #4 · Booth 4 · speaker to be announced",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b4-interactive",
+      "teks": "Interactive Presentation",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #4 · Booth 4 · speaker to be announced",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b4-time",
+      "teks": "Effective and Efficient Use of Time",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #4 · Booth 4 · speaker to be announced",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
     }
   ],
   "departemen_its": "Ambil daftar departemen ITS terbaru dari situs resmi ITS saat build; sediakan opsi 'Lainnya' dengan isian teks.",

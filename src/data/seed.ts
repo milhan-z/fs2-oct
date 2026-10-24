@@ -1,17 +1,9 @@
 import seed from '../../data/seed.json'
+import { DEPARTMENTS } from './faculties'
 import type { Booth, Content, Facility, Question, RoomLabel, Speaker } from './types'
 
-// ITS departments (undergraduate / applied bachelor), English names. "Other" lets users type their own.
-export const DEPARTEMEN_ITS = [
-  'Actuarial Science', 'Biology', 'Chemistry', 'Mathematics', 'Physics', 'Statistics',
-  'Chemical Engineering', 'Engineering Physics', 'Food Technology', 'Industrial and Systems Engineering', 'Materials and Metallurgical Engineering', 'Mechanical Engineering',
-  'Architecture', 'Civil Engineering', 'Environmental Engineering', 'Geomatics Engineering', 'Geophysical Engineering', 'Urban and Regional Planning',
-  'Marine Engineering', 'Naval Architecture', 'Ocean Engineering', 'Sea Transportation Engineering',
-  'Biomedical Engineering', 'Computer Engineering', 'Electrical Engineering', 'Informatics', 'Information Systems', 'Information Technology',
-  'Business Management', 'Development Studies', 'Industrial Product Design', 'Interior Design', 'Visual Communication Design',
-  'Medical Technology', 'Medicine',
-  'Business Statistics', 'Civil Infrastructure Engineering', 'Electrical Automation Engineering', 'Industrial Chemical Engineering', 'Industrial Mechanical Engineering', 'Instrumentation Engineering',
-].sort((a, b) => a.localeCompare(b, 'en'))
+// ITS departments as spelled in the committee's feedback form (see faculties.ts). "Other" lets users type their own.
+export const DEPARTEMEN_ITS = [...DEPARTMENTS].sort((a, b) => a.localeCompare(b, 'en'))
 
 function stampUrl(path: string | null): string | null {
   if (!path) return null
@@ -58,6 +50,9 @@ export function seedContent(): Omit<Content, 'departemen'> {
     tipe: q.tipe as Question['tipe'],
     wajib: q.wajib,
     sort: i + 1,
+    section: (q as { section?: string }).section ?? null,
+    labelLow: (q as { labelLow?: string }).labelLow ?? null,
+    labelHigh: (q as { labelHigh?: string }).labelHigh ?? null,
   }))
   return {
     event: {

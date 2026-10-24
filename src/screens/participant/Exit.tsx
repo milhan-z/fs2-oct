@@ -258,6 +258,7 @@ function FeedbackStepper({
             transition={{ duration: 0.18, ease: EASE }}
           >
             <legend className="text-[17px] leading-snug font-semibold">
+              {q.section && <span className="mb-1.5 block font-mono text-[12px] leading-snug font-normal tracking-[0.1em] text-stamp uppercase">{q.section}</span>}
               {q.teks} {q.wajib ? <span className="text-stamp">*</span> : <span className="font-normal text-ink/55">(optional)</span>}
             </legend>
             {q.tipe === 'skala_1_5' ? (
@@ -284,12 +285,15 @@ function FeedbackStepper({
                   })}
                 </div>
                 <p className="mt-2 flex justify-between text-[12px] text-ink/55">
-                  <span>Not great</span>
-                  <span>Excellent</span>
+                  <span>{q.labelLow || 'Poor'}</span>
+                  <span>{q.labelHigh || 'Excellent'}</span>
                 </p>
               </>
             ) : (
-              <textarea rows={4} className="ruled mt-4" aria-label={q.teks} value={get(q.id)?.nilaiTeks ?? ''} onChange={(e) => setAnswer(q.id, { nilaiTeks: e.target.value })} />
+              <>
+                <textarea rows={4} className="ruled mt-4" aria-label={q.teks} value={get(q.id)?.nilaiTeks ?? ''} onChange={(e) => setAnswer(q.id, { nilaiTeks: e.target.value })} />
+                {q.wajib && <p className="mt-1 text-[12px] text-ink/60">Nothing to add? Write “-”.</p>}
+              </>
             )}
           </motion.fieldset>
         </AnimatePresence>

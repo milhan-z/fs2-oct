@@ -62,7 +62,7 @@ ok(api.v, 'anon can execute get_my_state')
 
 // --- content
 const content = await call('get_content', [])
-ok(content.booths.length === 4 && content.speakers.length === 4 && content.questions.length === 3, 'get_content returns seed')
+ok(content.booths.length === 4 && content.speakers.length === 4 && content.questions.length === 21, 'get_content returns seed')
 ok(!JSON.stringify(content).includes('admin_password_hash') && !JSON.stringify(content).includes('$2a$'), 'content has no secrets')
 
 // --- participant
@@ -130,7 +130,7 @@ for (const b of ['B1', 'B2', 'B3', 'B4']) await call('save_resume', [pt, b, long
 await expectErr('submit', [pt], 'incomplete', 'submit blocked with short point')
 await call('save_resume', [pt, 'B4', long, long, long])
 await expectErr('submit', [pt], 'incomplete', 'submit blocked without feedback')
-await call('save_feedback', [pt, JSON.stringify([{ questionId: 'q1', nilaiInt: 5 }, { questionId: 'q2', nilaiInt: 4 }, { questionId: 'q3', nilaiTeks: 'Mantap' }])])
+await call('save_feedback', [pt, JSON.stringify([{ questionId: 'm1', nilaiInt: 5 }, { questionId: 'm2', nilaiInt: 4 }, { questionId: 'm3', nilaiInt: 4 }, { questionId: 'm4', nilaiInt: 5 }, { questionId: 'm5', nilaiTeks: 'Mantap' }])])
 await call('submit', [pt])
 st = await call('get_my_state', [pt])
 ok(st.submission.status === 'submitted' && st.submission.code === 'FS2-0028-A', 'submitted with code FS2-0028-A')
@@ -198,12 +198,12 @@ ok((await one(`select count(*)::int as n from public.participants where id = $1`
 
 // --- feedback questions: add / reorder / delete, any number
 for (let i = 4; i <= 12; i++) await call('admin_upsert_question', [at, JSON.stringify({ id: `qx${i}`, teks: `Extra question number ${i}`, tipe: i % 2 ? 'teks' : 'skala_1_5', wajib: false, sort: i })])
-ok((await call('get_content', [])).questions.length === 12, 'admin adds many feedback questions')
+ok((await call('get_content', [])).questions.length === 30, 'admin adds many feedback questions')
 await expectErr('admin_upsert_question', [at, JSON.stringify({ id: 'bad id', teks: 'Valid text here', tipe: 'teks', wajib: true, sort: 1 })], 'invalid', 'bad question id rejected')
 await expectErr('admin_upsert_question', [at, JSON.stringify({ id: 'qz', teks: 'hi', tipe: 'teks', wajib: true, sort: 1 })], 'invalid', 'too-short question rejected')
-await call('admin_set_question_order', [at, ['qx12', 'q1']])
+await call('admin_set_question_order', [at, ['qx12', 'm1']])
 const ordered = (await call('get_content', [])).questions
-ok(ordered.find((q) => q.id === 'qx12').sort === 1 && ordered.find((q) => q.id === 'q1').sort === 2, 'admin reorders questions')
+ok(ordered.find((q) => q.id === 'qx12').sort === 1 && ordered.find((q) => q.id === 'm1').sort === 2, 'admin reorders questions')
 await db.query(`insert into public.feedback_answers (participant_id, question_id, nilai_teks) values ($1, 'qx5', 'ok')`, [st.participant.id])
 await call('admin_delete_question', [at, 'qx5'])
 ok((await one(`select count(*)::int as n from public.feedback_answers where question_id = 'qx5'`)).n === 0, 'deleting a question deletes its answers')

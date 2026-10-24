@@ -460,7 +460,7 @@ function QuestionsCard({ questions, onSaved }: { questions: Question[]; onSaved:
 
 function QuestionRow({ q: initial, n, first, last, onMove, onSaved, onError }: { q: Question; n: number; first: boolean; last: boolean; onMove: (d: -1 | 1) => void; onSaved: (m?: string) => void; onError: (m: string) => void }) {
   const [q, setQ] = useState(initial)
-  const dirty = q.teks !== initial.teks || q.wajib !== initial.wajib
+  const dirty = q.teks !== initial.teks || q.wajib !== initial.wajib || (q.section ?? '') !== (initial.section ?? '') || (q.labelLow ?? '') !== (initial.labelLow ?? '') || (q.labelHigh ?? '') !== (initial.labelHigh ?? '')
   const btn = 'flex h-10 w-10 items-center justify-center rounded-lg border border-[#d5cabd] text-[16px] disabled:opacity-30'
   return (
     <div className="mt-3 rounded-xl border border-[#efe9df] p-3">
@@ -472,6 +472,21 @@ function QuestionRow({ q: initial, n, first, last, onMove, onSaved, onError }: {
           <input type="checkbox" className="h-5 w-5" checked={q.wajib} onChange={(e) => setQ({ ...q, wajib: e.target.checked })} />
           Required
         </label>
+      </div>
+      <div className="mt-2 grid gap-2 sm:grid-cols-[2fr_1fr_1fr]">
+        <Field label="Section title (optional, shown above the question)">
+          <input className="field-paper" maxLength={160} value={q.section ?? ''} onChange={(e) => setQ({ ...q, section: e.target.value })} />
+        </Field>
+        {q.tipe === 'skala_1_5' && (
+          <>
+            <Field label="Label for 1">
+              <input className="field-paper" maxLength={40} placeholder="Poor" value={q.labelLow ?? ''} onChange={(e) => setQ({ ...q, labelLow: e.target.value })} />
+            </Field>
+            <Field label="Label for 5">
+              <input className="field-paper" maxLength={40} placeholder="Excellent" value={q.labelHigh ?? ''} onChange={(e) => setQ({ ...q, labelHigh: e.target.value })} />
+            </Field>
+          </>
+        )}
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <button type="button" className={btn} aria-label={`Move question ${n} up`} disabled={first} onClick={() => onMove(-1)}>

@@ -156,7 +156,8 @@ function Detail({ pid, onBack, onChange }: { pid: string; onBack: () => void; on
             const a = p.answers.find((x) => x.questionId === q.id)
             return (
               <span key={q.id}>
-                {q.tipe === 'teks' ? 'Suggestion' : `Q${i + 1}`}: <b>{a?.nilaiInt ? `${a.nilaiInt}/5` : a?.nilaiTeks || '–'}</b>
+                {q.section ? `${q.section.replace(/ · .*/, '')} · ` : ''}
+                {q.tipe === 'teks' ? q.teks : `Q${i + 1} ${q.teks}`}: <b>{a?.nilaiInt ? `${a.nilaiInt}/5` : a?.nilaiTeks || '–'}</b>
               </span>
             )
           })}

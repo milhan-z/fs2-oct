@@ -27,8 +27,8 @@ seed.fasilitas.forEach((f, i) => {
 })
 seed.feedback.forEach((f, i) => {
   out.push(
-    `insert into public.feedback_questions (id, teks, tipe, wajib, sort) values (${[f.id, f.teks, f.tipe, f.wajib, i + 1].map(q).join(', ')})
-  on conflict (id) do update set teks = excluded.teks, tipe = excluded.tipe, wajib = excluded.wajib, sort = excluded.sort;`,
+    `insert into public.feedback_questions (id, teks, tipe, wajib, sort, section, label_low, label_high) values (${[f.id, f.teks, f.tipe, f.wajib, i + 1, f.section ?? null, f.labelLow ?? null, f.labelHigh ?? null].map(q).join(', ')})
+  on conflict (id) do update set teks = excluded.teks, tipe = excluded.tipe, wajib = excluded.wajib, sort = excluded.sort, section = excluded.section, label_low = excluded.label_low, label_high = excluded.label_high;`,
   )
 })
 const e = seed.event

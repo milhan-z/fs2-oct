@@ -118,10 +118,12 @@ try {
   await page.getByRole('button', { name: 'Passport', exact: true }).click()
   await wait(700)
   await transition('t15-passport-to-exit', () => page.getByRole('button', { name: /Answer & submit/ }).click(), 800)
-  await page.getByRole('radio').nth(4).click()
-  await wait(600)
-  await page.getByRole('radio').nth(3).click()
-  await wait(600)
+  for (let k = 0; k < 4; k++) {
+    await page.getByRole('radio').nth(4).click()
+    await wait(600)
+  }
+  await page.getByLabel('Criticism and Suggestions for Material').fill('-')
+  await wait(500)
   await wait(500)
   await screen('14-exit')
   await page.screenshot({ path: `${OUT}/screens/14b-exit-full.png`, fullPage: true })

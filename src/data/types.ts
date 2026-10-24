@@ -45,6 +45,11 @@ export interface Question {
   tipe: 'skala_1_5' | 'teks'
   wajib: boolean
   sort: number
+  /** heading shown above the question (a group of questions shares one) */
+  section?: string | null
+  /** end labels of a 1–5 scale, e.g. "Poor" / "Excellent" */
+  labelLow?: string | null
+  labelHigh?: string | null
 }
 
 export interface RoomLabel {
@@ -222,7 +227,10 @@ export interface AdminParticipantRow {
 }
 
 export interface ExportData {
+  /** same columns as the committee's Google Form sheet */
   respons: (string | number)[][]
+  /** stamps, the three notes per booth, review status and Stamp4It */
+  catatan: (string | number)[][]
   kunjungan: (string | number)[][]
   peserta: (string | number)[][]
 }
