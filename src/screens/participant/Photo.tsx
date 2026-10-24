@@ -6,6 +6,7 @@ import { api, isMock } from '../../data/api'
 import { useParticipant, useSignOut } from '../../app/participant'
 import { ErrorText } from '../../components/ui'
 import { sfx, vibrate } from '../../app/sound'
+import { onBackground, releaseVideo } from '../../app/camera'
 import { InkIcon } from '../../booklet/icons'
 import { DocLabel, Folio, MRZ, PageNo, PageSkeleton } from '../../booklet/print'
 
@@ -211,17 +212,35 @@ function PolaroidCamera({ boxRef, name, onClose, onUse }: { boxRef: React.RefObj
   const [leaving, setLeaving] = useState(false)
   const [live, setLive] = useState(false)
 
+  // `run` numbers every camera start; a stream that arrives after the camera was closed, switched or the pop-up
+  // unmounted is stopped on arrival, so the camera light never stays on by accident
+  const run = useRef(0)
+  const alive = useRef(true)
+  useEffect(() => {
+    alive.current = true
+    return () => {
+      alive.current = false
+    }
+  }, [])
+
   const stop = () => {
+    run.current++
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
+    releaseVideo(videoRef.current)
   }
 
   const start = useCallback(async () => {
     stop()
+    const mine = run.current
     setLive(false)
     setCamError('')
     try {
       const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false })
+      if (!alive.current || mine !== run.current) {
+        s.getTracks().forEach((t) => t.stop())
+        return
+      }
       streamRef.current = s
       if (videoRef.current) {
         videoRef.current.srcObject = s
@@ -236,6 +255,18 @@ function PolaroidCamera({ boxRef, name, onClose, onUse }: { boxRef: React.RefObj
     if (!shot) start()
     return stop
   }, [start, shot])
+
+  // leaving the browser (home screen, another app, a locked phone) turns the camera off; coming back turns it on
+  useEffect(
+    () =>
+      onBackground(
+        () => stop(),
+        () => {
+          if (!shot && alive.current) start()
+        },
+      ),
+    [start, shot],
+  )
 
   /** transform that puts the polaroid's picture window exactly over the photo box */
   const toBox = () => {

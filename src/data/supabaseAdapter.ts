@@ -152,13 +152,19 @@ export function supabaseAdapter(): Api {
     getContent,
 
     async checkNrp(nrp) {
-      return { exists: await rpc<boolean>('check_nrp', { p_nrp: nrp.trim() }) }
+      return rpc<{ exists: boolean; reset: boolean }>('participant_status', { p_nrp: nrp.trim() })
     },
 
     async login(nrp, pin) {
       const r = unwrap(await rpc<{ ok: boolean; token: string; photo?: string | null }>('participant_login', { p_nrp: nrp.trim(), p_pin: pin }))
       localStorage.setItem(SESSION_P, r.token)
       // the photo URL is fetched while the passport state loads, not after it
+      if (r.photo) resolvePhotoInBackground(r.token, r.photo)
+    },
+
+    async setPin(nrp, pin) {
+      const r = unwrap(await rpc<{ ok: boolean; token: string; photo?: string | null }>('participant_set_pin', { p_nrp: nrp.trim(), p_pin: pin }))
+      localStorage.setItem(SESSION_P, r.token)
       if (r.photo) resolvePhotoInBackground(r.token, r.photo)
     },
 
@@ -303,7 +309,7 @@ export function supabaseAdapter(): Api {
     },
     adminListParticipants: (q) => rpc('admin_list_participants', { p_token: aToken(), p_q: q.trim() }),
     adminResetStaffMasterPin: () => rpc<string>('admin_reset_staff_master_pin', { p_token: aToken() }),
-    adminResetPin: (pid) => rpc<string>('admin_reset_pin', { p_token: aToken(), p_pid: pid }),
+    adminResetPin: (pid) => rpc<void>('admin_reset_pin', { p_token: aToken(), p_pid: pid }),
     adminUpdateParticipant: (pid, data) => rpc<void>('admin_update_participant', { p_token: aToken(), p_pid: pid, p_data: data }),
     adminDeleteParticipant: (pid) => rpc<void>('admin_delete_participant', { p_token: aToken(), p_pid: pid }),
     adminResetStaffPin: (boothId) => rpc<string>('admin_reset_staff_pin', { p_token: aToken(), p_booth: boothId }),

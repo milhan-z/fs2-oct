@@ -8,7 +8,7 @@ import { ErrorText, Spinner } from '../../components/ui'
 import { InkIcon } from '../../booklet/icons'
 import { DocLabel, Folio, MRZ, PageNo } from '../../booklet/print'
 
-type Step = 'nrp' | 'pin' | 'register'
+type Step = 'nrp' | 'pin' | 'register' | 'reset'
 
 const YEARS = Array.from({ length: 8 }, (_, i) => String(2026 - i))
 
@@ -16,6 +16,7 @@ const TITLES: Record<Step, [string, string]> = {
   nrp: ['Identity page', 'Sign in to your passport'],
   pin: ['Welcome back', 'Enter your PIN'],
   register: ['New passport', 'Create your passport'],
+  reset: ['PIN reset', 'Choose a new PIN'],
 }
 
 /**
@@ -68,8 +69,8 @@ export function Login() {
     e.preventDefault()
     if (!/^\d{4,14}$/.test(nrp.trim())) return setErr('NRP must contain numbers only.')
     run(async () => {
-      const { exists } = await api.checkNrp(nrp)
-      setStep(exists ? 'pin' : 'register')
+      const { exists, reset } = await api.checkNrp(nrp)
+      setStep(!exists ? 'register' : reset ? 'reset' : 'pin')
     })
   }
 
@@ -78,6 +79,16 @@ export function Login() {
     if (!/^\d{4}$/.test(pin)) return setErr('PIN must be 4 digits.')
     run(async () => {
       await api.login(nrp, pin)
+      await done()
+    })
+  }
+
+  const submitReset = (e: FormEvent) => {
+    e.preventDefault()
+    if (!/^\d{4}$/.test(pin)) return setErr('PIN must be 4 digits.')
+    if (pin !== pin2) return setErr("PINs don't match. Please re-enter.")
+    run(async () => {
+      await api.setPin(nrp, pin)
       await done()
     })
   }
@@ -101,7 +112,9 @@ export function Login() {
       ? 'Present your NRP. No passport yet? The bureau will issue one on the spot.'
       : step === 'pin'
         ? `NRP ${nrp} already has a passport.`
-        : 'No passport on file for this NRP yet. Fill in this form once, then set a PIN.'
+        : step === 'reset'
+          ? `The committee reset the PIN of NRP ${nrp}. Choose a new one, and your passport carries on where you left off.`
+          : 'No passport on file for this NRP yet. Fill in this form once, then set a PIN.'
   const submitBtn = (label: string, disabled: boolean) => (
     <motion.button type="submit" whileTap={{ scale: 0.98 }} transition={{ duration: 0.06 }} className="btn btn-primary w-full" disabled={disabled}>
       {busy ? <Spinner /> : label}
@@ -148,8 +161,28 @@ export function Login() {
               <div className="mt-2">
                 <ErrorText onPaper>{err}</ErrorText>
               </div>
-              <p className="mt-3 text-[13px] text-ink/60">Forgot your PIN? Ask for a reset at the Front Office.</p>
+              <p className="mt-3 text-[13px] text-ink/60">Forgot your PIN? Ask the committee to reset it, then enter your NRP again to choose a new one.</p>
               <div className="mt-auto pt-8">{submitBtn('Open passport', busy || pin.length !== 4)}</div>
+            </form>
+          )}
+
+          {step === 'reset' && (
+            <form onSubmit={submitReset} className="mt-8 flex flex-1 flex-col" noValidate>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <DocLabel htmlFor="n-pin">New 4-digit PIN</DocLabel>
+                  <input id="n-pin" className="field-row font-mono tracking-[0.5em]" {...pinProps} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} autoFocus />
+                </div>
+                <div>
+                  <DocLabel htmlFor="n-pin2">Repeat PIN</DocLabel>
+                  <input id="n-pin2" className="field-row font-mono tracking-[0.5em]" {...pinProps} value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ''))} />
+                </div>
+              </div>
+              <div className="mt-2">
+                <ErrorText onPaper>{err}</ErrorText>
+              </div>
+              <p className="mt-3 text-[13px] text-ink/60">Your stamps, notes and photo are kept. Only the PIN changes.</p>
+              <div className="mt-auto pt-8">{submitBtn('Set PIN & open passport', busy || pin.length !== 4 || pin2.length !== 4)}</div>
             </form>
           )}
 

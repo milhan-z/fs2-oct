@@ -12,6 +12,7 @@ import { ErrorText, Loading, Spinner, Toast } from '../../components/ui'
 import { Icon } from '../../components/decor'
 import { EASE_OUT } from '../../motion/presets'
 import { vibrate } from '../../app/sound'
+import { onBackground, releaseVideo } from '../../app/camera'
 
 /** S1 — staff PIN (shared or booth), then S2 scanner / S3 history. Runners switch booths freely. */
 export default function StaffBooth() {
@@ -173,23 +174,43 @@ function Scanner({ slug, session, onLogout }: { slug: string; session: StaffSess
     [slug, addResolved],
   )
 
-  // camera: continuous scan, back camera (qr-scanner works on iOS Safari)
+  // camera: continuous scan, back camera (qr-scanner works on iOS Safari). It is switched off whenever the tab is
+  // left, the page is hidden (home screen, another app, locked phone) or the screen closes, and back on when visible.
   useEffect(() => {
-    if (tab !== 'scan' || !videoRef.current) return
-    const scanner = new QrScanner(videoRef.current, (res) => onToken(res.data), {
-      preferredCamera: 'environment',
-      maxScansPerSecond: 8,
-      returnDetailedScanResult: true,
-      highlightScanRegion: false,
-      highlightCodeOutline: false,
-    })
-    scanner
-      .start()
-      .then(() => setCamState('on'))
-      .catch(() => setCamState('error'))
+    const video = videoRef.current
+    if (tab !== 'scan' || !video) return
+    let scanner: QrScanner | null = null
+    let alive = true
+    const turnOn = () => {
+      if (!alive || scanner) return
+      setCamState('starting')
+      const s = new QrScanner(video, (res) => onToken(res.data), {
+        preferredCamera: 'environment',
+        maxScansPerSecond: 8,
+        returnDetailedScanResult: true,
+        highlightScanRegion: false,
+        highlightCodeOutline: false,
+      })
+      scanner = s
+      s.start()
+        .then(() => alive && scanner === s && setCamState('on'))
+        .catch(() => alive && setCamState('error'))
+    }
+    const turnOff = () => {
+      const s = scanner
+      scanner = null
+      s?.stop()
+      s?.destroy()
+      releaseVideo(video) // the light goes out even if the scanner was still starting
+    }
+    // started on the next tick: React's development double-mount then never creates (and tears down) a first scanner
+    const first = window.setTimeout(turnOn, 0)
+    const unsub = onBackground(turnOff, turnOn)
     return () => {
-      scanner.stop()
-      scanner.destroy()
+      alive = false
+      clearTimeout(first)
+      unsub()
+      turnOff()
     }
   }, [tab, onToken])
 

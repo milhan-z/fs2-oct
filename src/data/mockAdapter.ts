@@ -43,6 +43,8 @@ interface AuthRow {
   failed: number
   lockedUntil: number
   qrToken: string
+  /** a PIN reset is open until this time (ms): the participant chooses the new PIN at sign-in */
+  resetUntil?: number
 }
 interface SessionRow {
   role: 'participant' | 'staff' | 'admin'
@@ -287,7 +289,20 @@ export const mockAdapter: Api = {
 
   async checkNrp(nrp) {
     await delay()
-    return { exists: db.participants.some((p) => p.nrp === nrp.trim()) }
+    const p = db.participants.find((x) => x.nrp === nrp.trim())
+    return { exists: !!p, reset: !!p && (db.auth[p.id]?.resetUntil ?? 0) > Date.now() }
+  },
+
+  async setPin(nrp, pin) {
+    await delay()
+    if (!/^\d{4}$/.test(pin)) throw new ApiError('invalid', 'PIN must be 4 digits.')
+    const p = db.participants.find((x) => x.nrp === nrp.trim())
+    if (!p) throw new ApiError('not_found', 'This NRP is not registered yet.')
+    const a = db.auth[p.id]
+    if ((a.resetUntil ?? 0) <= Date.now()) throw new ApiError('no_reset', 'No PIN reset is open for this NRP. Ask the committee to reset it.')
+    Object.assign(a, { pinHash: hash(pin), failed: 0, lockedUntil: 0, resetUntil: 0 })
+    localStorage.setItem(SESSION_P, newSession({ role: 'participant', subject: p.id }))
+    save()
   },
 
   async login(nrp, pin) {
@@ -295,6 +310,7 @@ export const mockAdapter: Api = {
     const p = db.participants.find((x) => x.nrp === nrp.trim())
     if (!p) throw new ApiError('not_found', 'This NRP is not registered yet.')
     const a = db.auth[p.id]
+    if ((a.resetUntil ?? 0) > Date.now()) throw new ApiError('reset_pending', 'Your PIN was reset. Enter your NRP again to choose a new one.')
     if (a.lockedUntil > Date.now()) {
       const m = Math.ceil((a.lockedUntil - Date.now()) / 60000)
       throw new ApiError('locked', `Too many attempts. Try again in ${m} minute${m === 1 ? '' : 's'}.`)
@@ -642,21 +658,20 @@ export const mockAdapter: Api = {
         visits: activeVisits(p.id).length,
         status: db.submissions.find((s) => s.participantId === p.id)?.status ?? null,
         locked: db.auth[p.id].lockedUntil > Date.now(),
+        resetPending: (db.auth[p.id].resetUntil ?? 0) > Date.now(),
       }))
   },
 
   async adminResetPin(pid) {
     await delay()
     requireAdmin()
-    const pin = randomPin()
     const a = db.auth[pid]
     if (!a) throw new ApiError('not_found', 'Participant not found.')
-    Object.assign(a, { pinHash: hash(pin), failed: 0, lockedUntil: 0 })
-    // invalidate the participant's sessions
+    Object.assign(a, { failed: 0, lockedUntil: 0, resetUntil: Date.now() + 24 * 3600_000 })
+    // signed out everywhere; the participant chooses the new PIN at the next sign-in
     for (const [k, s] of Object.entries(db.sessions)) if (s.role === 'participant' && s.subject === pid) delete db.sessions[k]
     audit('admin', 'reset_pin', pid)
     save()
-    return pin
   },
 
   async adminUpdateParticipant(pid, data) {

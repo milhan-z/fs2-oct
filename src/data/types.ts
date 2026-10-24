@@ -224,6 +224,8 @@ export interface AdminParticipantRow {
   visits: number
   status: SubmissionStatus | null
   locked: boolean
+  /** a PIN reset is open: the participant has not chosen the new PIN yet */
+  resetPending: boolean
 }
 
 export interface ExportData {

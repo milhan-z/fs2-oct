@@ -30,7 +30,10 @@ export interface Api {
   getContent(): Promise<Content>
 
   // participant
-  checkNrp(nrp: string): Promise<{ exists: boolean }>
+  /** `reset`: the committee opened a PIN reset, so the participant chooses a new PIN instead of entering the old one */
+  checkNrp(nrp: string): Promise<{ exists: boolean; reset: boolean }>
+  /** chooses a new PIN while a reset is open, and signs in (progress is kept) */
+  setPin(nrp: string, pin: string): Promise<void>
   login(nrp: string, pin: string): Promise<void>
   register(input: RegisterInput): Promise<void>
   hasSession(): boolean
@@ -66,8 +69,8 @@ export interface Api {
   adminReview(submissionId: string, action: 'approve' | 'revision', note: string): Promise<void>
   adminSetStamp4it(participantId: string, given: boolean): Promise<void>
   adminListParticipants(q: string): Promise<AdminParticipantRow[]>
-  /** returns the new PIN — shown once to the admin */
-  adminResetPin(participantId: string): Promise<string>
+  /** opens a 24 h window in which the participant chooses a new PIN at sign-in; the old PIN stops working */
+  adminResetPin(participantId: string): Promise<void>
   /** correct NRP / name / department / class of */
   adminUpdateParticipant(participantId: string, data: { nrp: string; nama: string; departemen: string; angkatan: string }): Promise<void>
   /** removes the participant with visits, notes, feedback and submission */

@@ -6,11 +6,11 @@ import type { AdminParticipantRow } from '../../data/types'
 
 const STATUS: Record<string, string> = { submitted: 'Waiting', revision: 'Needs revision', approved: 'Approved' }
 
-/** A3 — participant search, PIN reset (new PIN shown once), edit identity data, delete. */
+/** A3 — participant search, PIN reset (the participant chooses the new PIN), edit identity data, delete. */
 export function Participants() {
   const [q, setQ] = useState('')
   const list = useLive(() => api.adminListParticipants(q), [q], 10000)
-  const [shown, setShown] = useState<{ nama: string; pin: string } | null>(null)
+  const [shown, setShown] = useState<{ nama: string; nrp: string } | null>(null)
   const [editing, setEditing] = useState<AdminParticipantRow | null>(null)
 
   const remove = async (id: string, nama: string, nrp: string) => {
@@ -27,11 +27,15 @@ Type the NRP to confirm:`)
     }
   }
 
-  const reset = async (id: string, nama: string) => {
-    if (!confirm(`Reset the PIN of ${nama}? The old PIN stops working.`)) return
-    const pin = await api.adminResetPin(id)
-    setShown({ nama, pin })
-    list.reload()
+  const reset = async (id: string, nama: string, nrp: string) => {
+    if (!confirm(`Let ${nama} choose a new PIN? The old PIN stops working and they are signed out. Their stamps and notes are kept.`)) return
+    try {
+      await api.adminResetPin(id)
+      setShown({ nama, nrp })
+      list.reload()
+    } catch (e) {
+      alert((e as Error).message)
+    }
   }
 
   return (
@@ -43,11 +47,10 @@ Type the NRP to confirm:`)
       <input id="p-q" className="field-paper mt-4 max-w-md" placeholder="Search NRP or name" value={q} onChange={(e) => setQ(e.target.value)} />
 
       {shown && (
-        <div className="mt-4 flex max-w-md items-center justify-between rounded-2xl border-2 border-yellow bg-[#fff7e0] p-4" role="alert">
-          <div>
-            <p className="text-[14px]">New PIN for {shown.nama} (shown once):</p>
-            <p className="font-mono text-[34px] font-bold tracking-[0.3em]">{shown.pin}</p>
-          </div>
+        <div className="mt-4 flex max-w-xl items-start justify-between gap-4 rounded-2xl border-2 border-yellow bg-[#fff7e0] p-4" role="alert">
+          <p className="text-[15px] leading-snug">
+            <b>PIN reset opened for {shown.nama}.</b> Tell them to sign in with their NRP ({shown.nrp}): they will be asked to choose a new PIN themselves. Their stamps and notes stay. The reset stays open for 24 hours.
+          </p>
           <button type="button" className="min-h-11 px-3 underline" onClick={() => setShown(null)}>
             Close
           </button>
@@ -76,6 +79,7 @@ Type the NRP to confirm:`)
                 <td className="px-4 py-2 font-bold">
                   {p.nama}
                   {p.locked && <span className="ml-2 rounded bg-[#fde2e2] px-1.5 py-0.5 text-[11px] text-[#9b2c2c]">locked</span>}
+                  {p.resetPending && <span className="ml-2 rounded bg-[#fff1c2] px-1.5 py-0.5 text-[11px] text-[#7a5a00]">PIN reset open</span>}
                 </td>
                 <td className="px-4 py-2">
                   {p.departemen} · {p.angkatan}
@@ -87,7 +91,7 @@ Type the NRP to confirm:`)
                   <button type="button" className="min-h-10 rounded-lg border border-[#d5cabd] px-3 font-semibold" onClick={() => setEditing(p)}>
                     Edit
                   </button>
-                  <button type="button" className="ml-2 min-h-10 rounded-lg border border-[#d5cabd] px-3 font-semibold" onClick={() => reset(p.id, p.nama)}>
+                  <button type="button" className="ml-2 min-h-10 rounded-lg border border-[#d5cabd] px-3 font-semibold" onClick={() => reset(p.id, p.nama, p.nrp)}>
                     Reset PIN
                   </button>
                   <button type="button" className="ml-2 min-h-10 rounded-lg border border-[#e7b7b3] px-3 font-semibold text-[#9b2c2c]" onClick={() => remove(p.id, p.nama, p.nrp)}>
