@@ -121,6 +121,11 @@ function Scanner({ slug, session, onLogout }: { slug: string; session: StaffSess
   const queueRef = useRef(queue)
   const [frameScope, animateFrame] = useAnimate()
   const history = useLive(() => api.staffHistory(slug), [slug], 5000)
+  // expired officer session → back to the PIN screen
+  const expired = (history.error as { code?: string } | null)?.code === 'auth'
+  useEffect(() => {
+    if (expired) onLogout()
+  }, [expired, onLogout])
 
   useEffect(() => {
     queueRef.current = queue

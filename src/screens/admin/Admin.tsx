@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { NavLink, Route, Routes } from 'react-router'
 import { api, isMock } from '../../data/api'
 import { useLive } from '../../app/useAsync'
@@ -54,6 +54,11 @@ function AdminLogin({ onDone }: { onDone: () => void }) {
 
 function AdminShell({ onLogout }: { onLogout: () => void }) {
   const dash = useLive(() => api.adminDashboard(), [], 5000)
+  // an expired or revoked session sends the admin back to the sign-in form instead of loading forever
+  const expired = (dash.error as { code?: string } | null)?.code === 'auth'
+  useEffect(() => {
+    if (expired) onLogout()
+  }, [expired, onLogout])
   const pending = dash.data?.submissions.submitted ?? 0
   const links = [
     { to: '/admin', label: 'Overview', end: true },
