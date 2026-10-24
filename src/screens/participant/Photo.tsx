@@ -9,7 +9,8 @@ import { sfx, vibrate } from '../../app/sound'
 import { InkIcon } from '../../booklet/icons'
 import { DocLabel, Folio, MRZ, PageNo, PageSkeleton } from '../../booklet/print'
 
-export const ONBOARDED_KEY = 'fs2.onboarded'
+/** The map intro is shown once per passport (not once per phone), so a new or re-created account sees it again. */
+export const onboardedKey = (participantId: string) => `fs2.onboarded.${participantId}`
 
 /** Draws a neutral sample portrait (mock mode only) so demos work without a camera. */
 async function samplePhoto(): Promise<Blob> {
@@ -70,7 +71,7 @@ export function Photo() {
       await reload()
       // let the MRZ finish typing before turning the page
       await new Promise((r) => setTimeout(r, reduce ? 0 : 700))
-      const onboarded = localStorage.getItem(ONBOARDED_KEY)
+      const onboarded = state ? localStorage.getItem(onboardedKey(state.participant.id)) : null
       nav(retake ? '/passport' : onboarded ? '/map' : '/onboarding', { replace: true })
     } catch (e) {
       setErr((e as Error).message || 'Could not save the photo. Please try again.')

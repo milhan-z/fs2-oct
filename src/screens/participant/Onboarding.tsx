@@ -5,7 +5,8 @@ import { useContent } from '../../app/providers'
 import { LightString } from '../../components/ChristmasLights'
 import { CAM_BUILDING, LOUNGE_BOUNDS, WALLS_INNER, cameraTransform, viewBoxOf, type Rect } from '../../map/geometry'
 import { boothCode, TicketPaper } from '../../booklet/print'
-import { ONBOARDED_KEY } from './Photo'
+import { useParticipant } from '../../app/participant'
+import { onboardedKey } from './Photo'
 
 // a) lights  b) silhouette  c) plan draws  d) zoom to Lounge  e) pins drop  f) note
 const TIMELINE = [0, 1100, 2100, 3700, 4700, 5500]
@@ -18,6 +19,7 @@ export function Onboarding() {
   const nav = useNavigate()
   const reduce = useReducedMotion()
   const { content } = useContent()
+  const { state } = useParticipant()
   const [phase, setPhase] = useState(reduce ? 5 : 0)
   const cam = useMotionValue(0)
   const camRef = useRef<SVGGElement>(null)
@@ -52,7 +54,7 @@ export function Onboarding() {
   }, [])
 
   const finish = () => {
-    localStorage.setItem(ONBOARDED_KEY, '1')
+    if (state) localStorage.setItem(onboardedKey(state.participant.id), '1')
     nav('/map', { replace: true })
   }
 
