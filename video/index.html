@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>FS² tutorial — motion</title>
+<style>
+  @font-face { font-family: 'Baskerville'; font-weight: 700; src: url(assets/fonts/libre-baskerville-latin-700-normal.woff2); }
+  @font-face { font-family: 'Baskerville'; font-weight: 400; font-style: italic; src: url(assets/fonts/libre-baskerville-latin-400-italic.woff2); }
+  @font-face { font-family: 'Poppins'; font-weight: 600; src: url(assets/fonts/poppins-latin-600-normal.woff2); }
+  @font-face { font-family: 'Poppins'; font-weight: 700; src: url(assets/fonts/poppins-latin-700-normal.woff2); }
+  @font-face { font-family: 'Anton'; src: url(assets/fonts/anton-latin-400-normal.woff2); }
+  @font-face { font-family: 'Courier Prime'; font-weight: 400; src: url(assets/fonts/courier-prime-latin-400-normal.woff2); }
+  @font-face { font-family: 'Courier Prime'; font-weight: 700; src: url(assets/fonts/courier-prime-latin-700-normal.woff2); }
+  :root { --red: #e0302a; --red-deep: #b3261e; --night: #0d0608; --cream: #f3ebdd; --gold: #f0b429; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #000; overflow: hidden; }
+  #stage { position: absolute; left: 0; top: 0; overflow: hidden; background: var(--night); color: var(--cream); font-family: 'Poppins', sans-serif; }
+  .abs { position: absolute; }
+  #stage img { display: block; user-select: none; }
+  #phone { position: absolute; will-change: transform; }
+  .bezel { position: absolute; inset: 0; background: linear-gradient(145deg, #3a3236, #0c0809 40%, #241b1f); box-shadow: 0 0 0 2px #50464b inset, 0 40px 90px rgba(0,0,0,.7), 0 0 120px rgba(224,48,42,.28); }
+  .screen { position: absolute; overflow: hidden; background: #120a0b; }
+  .layer { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .layer img { width: 390px; height: 844px; }
+  .glass { position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,255,255,.10), rgba(255,255,255,0) 32%); mix-blend-mode: screen; pointer-events: none; }
+  .island { position: absolute; background: #050303; border-radius: 99px; }
+  .badge { font-family: 'Anton', sans-serif; color: var(--red); text-shadow: 0 0 18px rgba(224,48,42,.9), 0 0 48px rgba(224,48,42,.55); letter-spacing: .02em; line-height: 1; }
+  .cap-title { font-family: 'Baskerville', serif; font-weight: 700; line-height: 1.1; color: var(--cream); text-shadow: 0 2px 24px rgba(0,0,0,.8); }
+  .cap-sub { font-family: 'Poppins', sans-serif; font-weight: 600; color: rgba(243,235,221,.82); text-shadow: 0 2px 14px rgba(0,0,0,.9); }
+  .neon { font-family: 'Baskerville', serif; font-weight: 700; color: #ffd9d3; text-shadow: 0 0 10px #ff5a4d, 0 0 28px #e0302a, 0 0 70px #e0302a, 0 0 140px rgba(224,48,42,.7); }
+  .mono { font-family: 'Courier Prime', monospace; }
+  #grain { position: absolute; inset: -100px; mix-blend-mode: overlay; opacity: .3; pointer-events: none; }
+  #vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 45%, rgba(0,0,0,.72) 100%); }
+  .ring { position: absolute; border-radius: 50%; border: 3px solid #ffd9d3; box-shadow: 0 0 14px #ff5a4d, 0 0 30px rgba(224,48,42,.8), inset 0 0 12px rgba(255,90,77,.6); pointer-events: none; }
+  .rrect { position: absolute; border: 3px solid #ffd9d3; border-radius: 10px; box-shadow: 0 0 14px #ff5a4d, 0 0 34px rgba(224,48,42,.8); pointer-events: none; }
+  .touch { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: rgba(255,255,255,.35); border: 2px solid rgba(255,255,255,.8); pointer-events: none; }
+  .pill { background: #fff; border-radius: 999px; padding: 14px 34px; box-shadow: 0 6px 30px rgba(0,0,0,.5); }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="cues.js"></script>
+<script>
+// ---------------------------------------------------------------------------------------------
+// FS² tutorial — every frame is a pure function of time (window.seek). No timers, no Math.random.
+// ---------------------------------------------------------------------------------------------
+const Q = new URLSearchParams(location.search)
+const W = +(Q.get('w') || 1080), H = +(Q.get('h') || 1920)
+const VERT = H > W
+window.DURATION = CUES.duration
+window.FPS = CUES.fps
+
+const clamp01 = (v) => Math.max(0, Math.min(1, v))
+const lerp = (a, b, k) => a + (b - a) * k
+function bezier(x1, y1, x2, y2) {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by
+  const sx = (u) => ((ax * u + bx) * u + cx) * u, sy = (u) => ((ay * u + by) * u + cy) * u, dx = (u) => (3 * ax * u + 2 * bx) * u + cx
+  return (x) => {
+    if (x <= 0) return 0
+    if (x >= 1) return 1
+    let u = x
+    for (let i = 0; i < 8; i++) { const e = sx(u) - x; if (Math.abs(e) < 1e-6) return sy(u); const d = dx(u); if (Math.abs(d) < 1e-6) break; u -= e / d }
+    let lo = 0, hi = 1; u = x
+    while (hi - lo > 1e-6) { if (sx(u) < x) lo = u; else hi = u; u = (lo + hi) / 2 }
+    return sy(u)
+  }
+}
+const OUT = bezier(0.05, 0.7, 0.1, 1)       // M3 emphasized decelerate (enter)
+const IN = bezier(0.3, 0, 0.8, 0.15)         // emphasized accelerate (exit)
+const STD = bezier(0.2, 0, 0, 1)             // standard
+const prog = (t, t0, dur, ease = STD) => ease(clamp01((t - t0) / dur))
+function spring(t, { duration = 0.5, bounce = 0 } = {}) {
+  if (t <= 0) return 0
+  const w = (2 * Math.PI) / duration, z = bounce >= 0 ? 1 - bounce : 1 / (1 + bounce)
+  if (z < 1) { const wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + ((z * w) / wd) * Math.sin(wd * t)) }
+  return 1 - Math.exp(-w * t) * (1 + w * t)
+}
+// seeded randomness (per-element streams)
+function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) } return h >>> 0 }
+function rnd(seed) { let a = typeof seed === 'string' ? hash(seed) : seed >>> 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 }
+
+// ---- layout (re-laid out per aspect ratio, never cropped) ------------------------------------
+const SCR = { w: 390, h: 844 }
+const L = VERT
+  ? { phoneW: 650, cx: W / 2, cy: 1135, capX: 80, capY: 230, capW: W - 160, titleSize: 380, lights: 8, lightsY: 6, step: { n: 150, title: 66, sub: 40 } }
+  : { phoneW: 450, cx: W * 0.72, cy: H / 2 + 8, capX: 140, capY: H / 2 - 200, capW: 980, titleSize: 330, lights: 15, lightsY: 14, step: { n: 190, title: 78, sub: 38 } }
+const phoneH = (L.phoneW / 1.0) * (SCR.h / SCR.w) * 1.02 // slim bezel
+const BZ = Math.round(L.phoneW * 0.028)
+const scrW = L.phoneW - BZ * 2, scrH = scrW * (SCR.h / SCR.w)
+const PH = scrH + BZ * 2
+const sc = scrW / SCR.w
+
+// ---- DOM -------------------------------------------------------------------------------------
+const stage = document.getElementById('stage')
+stage.style.width = W + 'px'; stage.style.height = H + 'px'
+const el = (cls, parent = stage, style = '') => { const d = document.createElement('div'); d.className = cls; if (style) d.style.cssText = style; parent.appendChild(d); return d }
+
+// background stack
+const bg = el('abs', stage, `inset:0;background:radial-gradient(ellipse at 50% 100%, #3a0f10 0%, #1a090b 45%, #0d0608 100%)`)
+const redGlow = el('abs', stage, `left:-20%;right:-20%;bottom:-10%;height:55%;background:radial-gradient(ellipse at 50% 100%, rgba(224,48,42,.55), rgba(224,48,42,.12) 55%, transparent 72%);`)
+const clouds = el('abs', stage, `left:0;right:0;top:${VERT ? 8 : 4}%;opacity:.10`)
+clouds.innerHTML = `<img src="assets/clouds.svg" style="width:100%">`
+const smoke1 = el('abs', stage, `left:-10%;bottom:${VERT ? 6 : 0}%;width:${VERT ? 70 : 38}%;opacity:.14;mix-blend-mode:screen`); smoke1.innerHTML = `<img src="assets/smoke1.svg" style="width:100%">`
+const smoke2 = el('abs', stage, `right:-12%;bottom:${VERT ? 3 : 0}%;width:${VERT ? 75 : 42}%;opacity:.12;mix-blend-mode:screen`); smoke2.innerHTML = `<img src="assets/smoke2.svg" style="width:100%">`
+const skyline = el('abs', stage, `left:0;right:0;bottom:${VERT ? 120 : 40}px;opacity:.16;filter:brightness(.4)`); skyline.innerHTML = `<img src="assets/skyline.svg" style="width:100%">`
+const forest = el('abs', stage, `left:0;right:0;bottom:0;height:${VERT ? 520 : 400}px;pointer-events:none`)
+const pineCount = VERT ? 9 : 14
+for (let i = 0; i < pineCount; i++) {
+  const h = (VERT ? 360 : 300) + rnd('pine-h' + i) * 220
+  const left = (i / (pineCount - 1)) * 106 - 3
+  const d = el('abs', forest, `bottom:-10px;left:${left}%;height:${h}px;transform:translateX(-50%);opacity:${0.55 + rnd('pine-o' + i) * 0.4}`)
+  d.innerHTML = `<img src="assets/pine.webp" style="height:100%;width:auto;filter:brightness(.16) saturate(.5)">`
+}
+el('abs', forest, 'inset:auto 0 0 0;height:210px;background:linear-gradient(to top,#0b0506 12%,rgba(11,5,6,.75) 55%,transparent)')
+
+// spores
+const SPORES = 46
+const sporeEls = []
+for (let i = 0; i < SPORES; i++) { const s = el('abs', stage, `width:5px;height:5px;border-radius:50%;background:#f3ebdd;box-shadow:0 0 8px rgba(255,220,200,.9)`); sporeEls.push(s) }
+
+// flowers (Demogorgon)
+const flowerDefs = VERT
+  ? [{ x: -50, y: 1330, s: 230, r: -18 }, { x: 905, y: 1180, s: 190, r: 24 }, { x: 40, y: 600, s: 90, r: -30 }, { x: 960, y: 640, s: 110, r: 14 }, { x: 760, y: 1560, s: 130, r: -8 }, { x: 150, y: 1650, s: 110, r: 30 }]
+  : [{ x: -40, y: 760, s: 230, r: -18 }, { x: 1740, y: 700, s: 210, r: 24 }, { x: 60, y: 130, s: 100, r: -30 }, { x: 1850, y: 90, s: 110, r: 14 }, { x: 860, y: 930, s: 120, r: -8 }, { x: 420, y: 960, s: 90, r: 30 }]
+const flowers = flowerDefs.map((f, i) => { const d = el('abs', stage, `left:${f.x}px;top:${f.y}px;width:${f.s}px;height:${f.s}px;transform-origin:50% 50%;opacity:.85`); d.innerHTML = `<img src="assets/flower.svg" style="width:100%;height:100%">`; d._f = f; d._i = i; return d })
+
+// garland (lights)
+const BULBS = ['#E53935', '#F6C343', '#43A047', '#3B5BDB', '#3A9AAE', '#EC6FA5']
+const gar = el('abs', stage, `left:0;top:${L.lightsY}px;width:${W}px;height:150px;pointer-events:none`)
+const wireY = (x) => 22 + 18 * Math.sin((x / W) * Math.PI * (VERT ? 2.2 : 3.2) + 0.4)
+let svg = `<svg width="${W}" height="150" style="overflow:visible" viewBox="0 0 ${W} 150"><path d="M-40 ${wireY(-40)}`
+for (let x = -40; x <= W + 40; x += 12) svg += ` L${x} ${wireY(x).toFixed(1)}`
+svg += `" fill="none" stroke="#2a1d1f" stroke-width="4"/>`
+const bulbXs = Array.from({ length: L.lights }, (_, i) => ((i + 0.5) / L.lights) * W)
+bulbXs.forEach((x, i) => {
+  const y = wireY(x) + 6, c = BULBS[i % BULBS.length]
+  svg += `<g id="b${i}"><rect x="${x - 5}" y="${y - 2}" width="10" height="11" rx="2" fill="#3b3133"/>
+  <circle id="bg${i}" cx="${x}" cy="${y + 32}" r="46" fill="${c}" opacity="0"/>
+  <ellipse id="bb${i}" cx="${x}" cy="${y + 28}" rx="11" ry="18" fill="${c}" opacity="0.12"/>
+  <ellipse id="bh${i}" cx="${x - 3.5}" cy="${y + 22}" rx="3" ry="6" fill="#fff6e8" opacity="0"/></g>`
+})
+svg += `</svg>`
+gar.innerHTML = svg
+const bulbRefs = bulbXs.map((x, i) => ({ g: gar.querySelector('#bg' + i), b: gar.querySelector('#bb' + i), h: gar.querySelector('#bh' + i), c: BULBS[i % BULBS.length] }))
+
+// title block
+const title = el('abs', stage, `left:0;width:${W}px;top:${VERT ? 520 : 250}px;text-align:center;`)
+title.innerHTML = `
+  <div id="t-kick" class="cap-sub" style="font-size:${VERT ? 40 : 34}px;letter-spacing:.34em;text-transform:uppercase">Something strange is happening at</div>
+  <div id="t-fs" class="neon" style="font-size:${L.titleSize}px;line-height:1.05;margin-top:20px;white-space:nowrap"><span id="t-f">F</span><span id="t-s">S</span><span id="t-2" style="font-size:.55em;vertical-align:top;position:relative;top:.12em">2</span></div>
+  <div id="t-sub" class="cap-sub" style="font-size:${VERT ? 44 : 40}px;letter-spacing:.42em;text-transform:uppercase;margin-top:10px">Digital Passport</div>`
+const tKick = title.querySelector('#t-kick'), tF = title.querySelector('#t-f'), tS = title.querySelector('#t-s'), t2 = title.querySelector('#t-2'), tSub = title.querySelector('#t-sub')
+
+// step caption
+const cap = el('abs', stage, `left:${L.capX}px;top:${L.capY}px;width:${L.capW}px;`)
+cap.innerHTML = `<div style="display:flex;align-items:flex-end;gap:${VERT ? 30 : 36}px">
+  <div id="c-n" class="badge" style="font-size:${L.step.n}px;min-width:${VERT ? 130 : 150}px"></div>
+  <div style="padding-bottom:${VERT ? 14 : 18}px"><div id="c-t" class="cap-title" style="font-size:${L.step.title}px;white-space:nowrap"></div><div id="c-s" class="cap-sub" style="font-size:${L.step.sub}px;margin-top:12px"></div></div></div>`
+const cN = cap.querySelector('#c-n'), cT = cap.querySelector('#c-t'), cS = cap.querySelector('#c-s')
+
+// phone
+const phone = el('', stage); phone.id = 'phone'
+phone.style.cssText = `left:${L.cx - L.phoneW / 2}px;top:${L.cy - PH / 2}px;width:${L.phoneW}px;height:${PH}px;perspective:1800px`
+const bez = el('bezel', phone, `border-radius:${Math.round(L.phoneW * 0.13)}px`)
+const screen = el('screen', phone, `left:${BZ}px;top:${BZ}px;width:${scrW}px;height:${scrH}px;border-radius:${Math.round(L.phoneW * 0.105)}px`)
+const island = el('island', phone, `left:${L.phoneW / 2 - 52}px;top:${BZ + 16}px;width:104px;height:30px;z-index:5`)
+const layerA = el('layer', screen, `transform:scale(${sc})`), layerB = el('layer', screen, `transform:scale(${sc})`)
+const fxLayer = el('layer', screen, `transform:scale(${sc});width:390px;height:844px;`)
+el('glass', screen)
+
+const SLAM = new Image(); SLAM.src = 'assets/stamp-taiwan-lg.webp'
+const SHOTS = ['s01-cover', 's02-signin', 's04-photo-cam', 's05-photo-shot', 's06-map', 's07-map-sheet', 's08-qr', 's09-stamp', 's10-notes-empty', 's11-notes-filled', 's12-passport', 's13-exit', 's14-exit-text', 's15-status']
+const imgs = {}
+SHOTS.forEach((n) => { const i = new Image(); i.src = `shots/${n}.png`; i.style.cssText = 'width:390px;height:844px'; imgs[n] = i })
+
+// outro block
+const outro = el('abs', stage, `left:0;width:${W}px;top:${VERT ? 430 : 190}px;text-align:center`)
+outro.innerHTML = `<div id="o-fs" class="neon" style="font-size:${VERT ? 420 : 330}px;line-height:1.05;white-space:nowrap">FS<span style="font-size:.55em;vertical-align:top;position:relative;top:.12em">2</span></div>
+  <div id="o-tag" class="cap-title" style="font-size:${VERT ? 64 : 62}px;margin-top:30px;font-style:normal">Stranger Stories<br>from the Other Side!</div>
+  <div id="o-date" class="cap-sub" style="font-size:${VERT ? 40 : 36}px;margin-top:46px;letter-spacing:.06em">Wednesday, 28 October 2026</div>
+  <div id="o-venue" class="cap-sub" style="font-size:${VERT ? 34 : 30}px;margin-top:8px;opacity:.8">14:00 – 17:30 WIB · Global Kampong ITS</div>
+  <div id="o-logo" class="pill" style="display:inline-block;margin-top:${VERT ? 70 : 50}px"><img src="assets/logo-partners.webp" style="width:${VERT ? 760 : 700}px"></div>
+  <div id="o-cta" class="cap-sub" style="font-size:${VERT ? 38 : 34}px;margin-top:${VERT ? 48 : 36}px;color:#ffd9d3">Open your passport on your phone</div>`
+const oFs = outro.querySelector('#o-fs'), oTag = outro.querySelector('#o-tag'), oDate = outro.querySelector('#o-date'), oVenue = outro.querySelector('#o-venue'), oLogo = outro.querySelector('#o-logo'), oCta = outro.querySelector('#o-cta')
+
+// full-frame fx
+const flash = el('abs', stage, `inset:0;background:#ff5a4d;opacity:0;mix-blend-mode:screen;pointer-events:none`)
+const wave = el('abs', stage, `border-radius:50%;border:6px solid rgba(255,150,140,.9);box-shadow:0 0 60px rgba(224,48,42,.8), inset 0 0 60px rgba(224,48,42,.5);opacity:0;pointer-events:none`)
+const grain = el('', stage); grain.id = 'grain'
+;(() => {
+  const c = document.createElement('canvas'); c.width = c.height = 256
+  const g = c.getContext('2d'), d = g.createImageData(256, 256)
+  for (let i = 0; i < 256 * 256; i++) { const v = 90 + rnd('g' + i) * 150; d.data[i * 4] = d.data[i * 4 + 1] = d.data[i * 4 + 2] = v; d.data[i * 4 + 3] = 255 }
+  g.putImageData(d, 0, 0)
+  grain.style.backgroundImage = `url(${c.toDataURL()})`
+})()
+const vig = el('', stage); vig.id = 'vignette'
+const fade = el('abs', stage, 'inset:0;background:#000;opacity:1;pointer-events:none')
+if (!VERT) { el('abs', stage, `left:0;right:0;top:0;height:${Math.round(H * 0.045)}px;background:#000`); el('abs', stage, `left:0;right:0;bottom:0;height:${Math.round(H * 0.045)}px;background:#000`) }
+
+// ---- script ----------------------------------------------------------------------------------
+const V = Object.fromEntries(CUES.voice.map((v) => [v.key, v]))
+const HIT = CUES.hits
+const SCREENS = [
+  { img: 's01-cover', t: 3.5 }, { img: 's02-signin', t: 4.5 }, { img: 's04-photo-cam', t: 5.6 }, { img: 's05-photo-shot', t: 6.6 },
+  { img: 's06-map', t: 7.5 }, { img: 's07-map-sheet', t: 9.1 }, { img: 's08-qr', t: 10.7 }, { img: 's09-stamp', t: HIT.stamp - 0.2 },
+  { img: 's10-notes-empty', t: 15.4 }, { img: 's11-notes-filled', t: 17.1 }, { img: 's12-passport', t: 19.0 },
+  { img: 's13-exit', t: 20.3 }, { img: 's14-exit-text', t: 21.0 }, { img: 's15-status', t: HIT.send },
+]
+const STEPS = [
+  { n: '01', title: 'Sign in & snap', sub: 'NRP + PIN, then your photo', t0: V.signin.t - 0.1, t1: V.map.t - 0.1 },
+  { n: '02', title: 'Find each booth', sub: 'Tap a pin on the map', t0: V.map.t - 0.1, t1: V.qr.t - 0.1 },
+  { n: '03', title: 'Show your QR', sub: 'Officer scans, you get stamped', t0: V.qr.t - 0.1, t1: V.notes.t - 0.1 },
+  { n: '04', title: 'Write 3 notes', sub: '5+ words each, every booth', t0: V.notes.t - 0.1, t1: V.submit.t - 0.1 },
+  { n: '05', title: 'Feedback & submit', sub: 'Stamps and notes, then submit', t0: V.submit.t - 0.1, t1: 22.95 },
+]
+const R = SHOTS_RECTS
+const TAPS = [
+  { t: 5.15, at: { x: R.continue.x + R.continue.w / 2, y: R.continue.y + R.continue.h / 2 }, shot: 's02-signin' },
+  { t: 6.4, at: { x: R.shutter.x + R.shutter.w / 2, y: R.shutter.y + R.shutter.h / 2 }, shot: 's04-photo-cam' },
+  { t: 8.95, at: { x: R.pinTaiwan.x + R.pinTaiwan.w / 2, y: R.pinTaiwan.y + R.pinTaiwan.h / 2 }, shot: 's06-map' },
+  { t: 10.45, at: { x: R.tabQR.x + R.tabQR.w / 2, y: R.tabQR.y + R.tabQR.h / 2 }, shot: 's07-map-sheet' },
+  { t: 20.15, at: { x: R.answerSubmit.x + R.answerSubmit.w / 2, y: R.answerSubmit.y + R.answerSubmit.h / 2 }, shot: 's12-passport' },
+  { t: 21.85, at: { x: 195, y: 783 }, shot: 's14-exit-text' },
+]
+
+function camShake(t) {
+  const d = t - HIT.stamp
+  if (d < 0 || d > 0.7) return { x: 0, y: 0, r: 0 }
+  const a = Math.exp(-d * 7) * 22
+  return { x: Math.sin(d * 90) * a, y: Math.cos(d * 77) * a * 0.7, r: Math.sin(d * 60) * a * 0.04 }
+}
+
+function drawLights(t) {
+  const surge = Math.max(0, 1 - Math.abs(t - HIT.stamp) * 2.2) * 0.5 + Math.max(0, 1 - Math.abs(t - HIT.outro) * 1.6) * 0.5
+  bulbRefs.forEach((b, i) => {
+    const on0 = 0.35 + i * 0.09 + rnd('on' + i) * 0.12
+    let k = clamp01((t - on0) / 0.5)
+    // irregular Joyce-Byers flicker while powering up and in occasional stutters after
+    const q = Math.floor(t * 24)
+    const stutter = rnd(`f${i}-${q}`) < 0.07 || (t < on0 + 0.9 && rnd(`p${i}-${q}`) < 0.45) ? 0.18 : 1
+    // everything dips together in a power cut just before the title lands
+    const cut = t > 1.55 && t < 1.7 ? 0.1 : 1
+    k = k * stutter * cut
+    const v = Math.min(1, k + surge * 0.4)
+    b.g.setAttribute('opacity', (0.38 * v + surge * 0.3).toFixed(3))
+    b.b.setAttribute('opacity', (0.1 + 0.9 * v).toFixed(3))
+    b.h.setAttribute('opacity', (0.55 * v).toFixed(3))
+  })
+}
+
+function titleLine(span, t, t0) {
+  // letter ignites with flicker
+  const q = Math.floor(t * 30)
+  const on = t >= t0
+  const f = on ? (t < t0 + 0.35 ? (rnd(`${t0}-${q}`) < 0.5 ? 0.25 : 1) : 1) : 0
+  span.style.opacity = f.toFixed(3)
+}
+
+function setScreens(t) {
+  let cur = 0
+  for (let i = 0; i < SCREENS.length; i++) if (t >= SCREENS[i].t) cur = i
+  const s = SCREENS[cur], prev = SCREENS[Math.max(0, cur - 1)]
+  const k = prog(t, s.t, 0.34, OUT)
+  const attach = (layer, n) => { if (layer._n !== n) { layer.innerHTML = ''; layer.appendChild(imgs[n].cloneNode()); layer._n = n } }
+  attach(layerA, s.img)
+  if (cur > 0 && k < 1) {
+    attach(layerB, prev.img)
+    layerB.style.opacity = (1 - k).toFixed(3); layerB.style.transform = `scale(${sc}) translateX(${-k * 40}px)`
+    layerA.style.opacity = k.toFixed(3); layerA.style.transform = `scale(${sc}) translateX(${(1 - k) * 60}px)`
+  } else {
+    layerB.style.opacity = 0
+    layerA.style.opacity = 1; layerA.style.transform = `scale(${sc})`
+  }
+  return s
+}
+
+function fxFor(t, cur) {
+  let h = ''
+  const dim = (cls, x, y, w, hh, a, extra = '') => `<div class="${cls}" style="left:${x}px;top:${y}px;width:${w}px;height:${hh}px;opacity:${a};${extra}"></div>`
+  const pulse = (period, ph = 0) => ((t * period + ph) % 1)
+  // ring pulses
+  if (cur.img === 's02-signin') {
+    const a = prog(t, 4.6, 0.3) * (1 - prog(t, 5.3, 0.25))
+    h += dim('rrect', R.nrp.x - 4, R.nrp.y - 4, R.nrp.w + 8, R.nrp.h + 8, a)
+    const b = prog(t, 4.95, 0.2) * (1 - prog(t, 5.5, 0.2))
+    h += dim('rrect', R.continue.x - 4, R.continue.y - 4, R.continue.w + 8, R.continue.h + 8, b)
+  }
+  if (cur.img === 's04-photo-cam') {
+    const a = prog(t, 5.8, 0.3) * (1 - prog(t, 6.6, 0.15))
+    h += dim('ring', R.shutter.x - 10, R.shutter.y - 10, R.shutter.w + 20, R.shutter.h + 20, a * (0.6 + 0.4 * Math.sin(t * 10)))
+  }
+  if (cur.img === 's05-photo-shot') {
+    const a = prog(t, 6.7, 0.25) * (1 - prog(t, 7.3, 0.2))
+    h += dim('rrect', R.usePhoto.x - 4, R.usePhoto.y - 4, R.usePhoto.w + 8, R.usePhoto.h + 8, a)
+  }
+  if (cur.img === 's06-map') {
+    ;['pinKorea', 'pinTaiwan', 'pinGermany', 'pinB4'].forEach((nme, i) => {
+      const r = R[nme], cx = r.x + r.w / 2, cy = r.y + r.h / 2 - 4
+      const start = 7.8 + i * 0.12
+      for (let j = 0; j < 2; j++) {
+        const p = ((t - start) * 0.9 + j * 0.5) % 1
+        if (t < start || (nme === 'pinTaiwan' && t > 8.9)) continue
+        const size = 44 + p * 86
+        h += dim('ring', cx - size / 2, cy - size / 2, size, size, (1 - p) * 0.8 * clamp01((t - start) / 0.2))
+      }
+    })
+    if (t > 8.55) { const a = clamp01((t - 8.55) / 0.2) * (1 - prog(t, 9.0, 0.1)); h += dim('ring', R.pinTaiwan.x - 6, R.pinTaiwan.y - 4, R.pinTaiwan.w + 12, R.pinTaiwan.h + 12, a) }
+  }
+  if (cur.img === 's07-map-sheet') {
+    const a = prog(t, 10.1, 0.2) * (1 - prog(t, 10.6, 0.1))
+    h += dim('rrect', 150, 756, 190, 62, a * (0.7 + 0.3 * Math.sin(t * 12)))
+  }
+  if (cur.img === 's08-qr') {
+    // officer's scanner sweeps the QR
+    const p = prog(t, 11.7, 1.7, STD)
+    const y = lerp(190, 505, p)
+    const a = clamp01((t - 11.7) / 0.15) * (1 - prog(t, 13.35, 0.2))
+    h += `<div style="position:absolute;left:44px;top:${y}px;width:302px;height:6px;opacity:${a};background:linear-gradient(90deg,transparent,#7dffa5,transparent);box-shadow:0 0 22px #3dff7d,0 0 60px rgba(61,255,125,.7)"></div>`
+    h += `<div style="position:absolute;left:44px;top:190px;width:302px;height:${Math.max(0, y - 190)}px;opacity:${a * 0.22};background:#3dff7d"></div>`
+  }
+  if (cur.img === 's10-notes-empty' || cur.img === 's11-notes-filled') {
+    const stepY = 131
+    for (let i = 0; i < 3; i++) {
+      const t0 = 16.1 + i * 0.35
+      const a = prog(t, t0, 0.18) * (1 - prog(t, t0 + 0.5, 0.2))
+      h += dim('rrect', R.notePoint1.x - 4, R.notePoint1.y + i * stepY - 4, R.notePoint1.w + 8, R.notePoint1.h - 18, a)
+    }
+  }
+  if (cur.img === 's12-passport') {
+    const a = prog(t, 19.15, 0.3) * (1 - prog(t, 20.3, 0.25))
+    h += dim('rrect', 20, 52, 350, 500, a * 0.9)
+  }
+  if (cur.img === 's13-exit' || cur.img === 's14-exit-text') {
+    const a = prog(t, 21.2, 0.2) * (1 - prog(t, 22.0, 0.1))
+    h += dim('rrect', 28, 756, 334, 54, cur.img === 's14-exit-text' ? a : 0)
+  }
+  // touches
+  for (const tp of TAPS) {
+    if (cur.img !== tp.shot) continue
+    const a = tp.t - 0.35, d = t - a
+    if (d < 0 || d > 0.95) continue
+    const arrive = prog(t, a, 0.3, OUT)
+    const x = lerp(tp.at.x + 90, tp.at.x, arrive), y = lerp(tp.at.y + 120, tp.at.y, arrive)
+    const press = t > tp.t ? 0.8 : 1
+    const vis = clamp01(d / 0.1) * (1 - prog(t, tp.t + 0.25, 0.2))
+    h += `<div class="touch" style="left:${x}px;top:${y}px;opacity:${vis};transform:scale(${press})"></div>`
+    const rp = prog(t, tp.t, 0.5, OUT)
+    if (t > tp.t) h += `<div class="ring" style="left:${tp.at.x - 14 - rp * 52}px;top:${tp.at.y - 14 - rp * 52}px;width:${28 + rp * 104}px;height:${28 + rp * 104}px;opacity:${1 - rp}"></div>`
+  }
+  // stamp slam: the ink lands exactly on the impact
+  if (cur.img === 's09-stamp' && t < HIT.stamp + 0.3) {
+    const patch = t < HIT.stamp ? 1 : 1 - prog(t, HIT.stamp, 0.1)
+    h += `<div style="position:absolute;left:118px;top:158px;width:154px;height:156px;background:rgb(233,225,211);opacity:${patch}"></div>`
+    const p = prog(t, HIT.stamp - 0.18, 0.18, bezier(0.2, 0.6, 0.4, 1))
+    const a = clamp01((t - (HIT.stamp - 0.18)) / 0.05) * (1 - prog(t, HIT.stamp + 0.1, 0.18))
+    h += `<img src="assets/stamp-taiwan-lg.webp" style="position:absolute;left:127px;top:166px;width:136px;height:136px;opacity:${a};transform:scale(${lerp(2.7, 1, p)}) rotate(${lerp(-12, 0, p)}deg)">`
+  }
+  // camera flash on the shutter
+  if (t > 6.4 && t < 6.62) h += `<div style="position:absolute;inset:0;background:#fffaf0;opacity:${(1 - (t - 6.4) / 0.22).toFixed(3)}"></div>`
+  // stamp moment: bloom
+  if (t > HIT.stamp && t < HIT.stamp + 1.2) { const p = (t - HIT.stamp) / 1.2; h += `<div style="position:absolute;left:50%;top:360px;width:420px;height:420px;margin:-210px 0 0 -210px;border-radius:50%;background:radial-gradient(rgba(255,120,100,${0.5 * (1 - p)}),transparent 65%)"></div>` }
+  fxLayer.innerHTML = h
+}
+
+let lastCapKey = ''
+function setCaption(t) {
+  let step = null
+  for (const s of STEPS) if (t >= s.t0 && t < s.t1) step = s
+  if (!step) { cap.style.opacity = 0; return }
+  const idx = STEPS.indexOf(step)
+  const key = step.n
+  if (key !== lastCapKey) { cN.textContent = step.n; cT.textContent = step.title; cS.textContent = step.sub; lastCapKey = key }
+  const inK = prog(t, step.t0, 0.5, OUT), outK = prog(t, step.t1 - 0.25, 0.25, IN)
+  cap.style.opacity = (inK * (1 - outK)).toFixed(3)
+  cap.style.transform = `translateY(${(1 - inK) * 36 - outK * 20}px)`
+  cN.style.opacity = (0.6 + 0.4 * (rnd(`bn${idx}-${Math.floor(t * 20)}`) < 0.06 ? 0.3 : 1)).toFixed(2)
+  if (!VERT) cap.style.top = L.capY + 'px'
+}
+
+window.seek = async function (t) {
+  t = Math.min(t, CUES.duration)
+  // backdrop motion
+  redGlow.style.opacity = (0.55 + 0.25 * Math.sin(t * 1.3) + (Math.max(0, 1 - Math.abs(t - HIT.stamp) * 2.5) * 0.9) + Math.max(0, 1 - Math.abs(t - HIT.outro) * 1.4) * 0.8).toFixed(3)
+  smoke1.style.transform = `translate(${Math.sin(t * 0.35) * 40}px, ${Math.cos(t * 0.3) * -26}px)`
+  smoke2.style.transform = `translate(${Math.sin(t * 0.3 + 2) * -46}px, ${Math.cos(t * 0.25) * -22}px)`
+  clouds.style.transform = `translateX(${t * -6}px)`
+  forest.style.transform = `translateX(${Math.sin(t * 0.2) * 6}px)`
+  sporeEls.forEach((s, i) => {
+    const per = 7 + rnd('sp' + i) * 6, ph = rnd('sq' + i) * per
+    const p = ((t + ph) % per) / per
+    const x = rnd('sx' + i) * W + Math.sin(p * 6 + i) * 40
+    const y = H * (0.95 - p * 0.95)
+    s.style.transform = `translate(${x}px,${y}px) scale(${0.6 + rnd('ss' + i) * 0.9})`
+    s.style.opacity = (Math.sin(p * Math.PI) * 0.7).toFixed(3)
+  })
+  flowers.forEach((f) => { const sw = Math.sin(t * 0.9 + f._i * 1.7) * 4; f.style.transform = `rotate(${f._f.r + sw}deg) scale(${1 + Math.sin(t * 0.6 + f._i) * 0.03})` })
+  drawLights(t)
+
+  // title card (0–3.9)
+  const titleIn = t < 3.9
+  title.style.display = titleIn ? 'block' : 'none'
+  if (titleIn) {
+    const kk = prog(t, 0.9, 0.9, OUT)
+    tKick.style.opacity = (kk * (1 - prog(t, 3.35, 0.4, IN))).toFixed(3)
+    tKick.style.transform = `translateY(${(1 - kk) * 20}px)`
+    titleLine(tF, t, HIT.title), titleLine(tS, t, HIT.title + 0.28), titleLine(t2, t, HIT.title + 0.56)
+    const out = prog(t, 3.2, 0.7, IN)
+    const breathe = 1 + (t - 2) * 0.012
+    title.style.opacity = (1 - out).toFixed(3)
+    title.style.transform = `translateY(${-out * 160}px) scale(${(breathe * (1 - out * 0.25)).toFixed(4)})`
+    tSub.style.opacity = prog(t, 2.9, 0.5, OUT).toFixed(3) * 1
+  }
+
+  // phone
+  const pin = t - 3.25
+  let px = 0, py = 0, rot = 0, sca = 1, op = 1
+  if (t < 3.25) { op = 0; py = 900 }
+  else {
+    const sp = spring(pin, { duration: 0.85, bounce: 0.12 })
+    py = (1 - sp) * 1100; rot = (1 - sp) * -7; op = clamp01(pin / 0.18)
+  }
+  // moving hold + gentle camera push per step
+  const drift = Math.sin(t * 0.9) * 8, tilt = Math.sin(t * 0.55) * 1.8
+  sca = 1 + 0.018 * Math.sin(t * 0.4) + prog(t, 3.5, 20, STD) * 0.03
+  const sh = camShake(t)
+  // hit punch
+  const punch = t > HIT.stamp ? 1 - spring(t - HIT.stamp, { duration: 0.5, bounce: 0.3 }) * 1 : 0
+  sca *= 1 + punch * 0.0
+  // leaves for the outro
+  const leave = prog(t, 22.9, 0.55, IN)
+  py += leave * 1500; rot += leave * 6; op *= 1 - clamp01((leave - 0.7) / 0.3)
+  phone.style.opacity = op.toFixed(3)
+  phone.style.display = op <= 0.001 ? 'none' : 'block'
+  phone.style.transform = `translate(${px + sh.x}px, ${py + drift + sh.y}px) rotate(${rot + sh.r}deg) rotateY(${tilt}deg) scale(${sca})`
+
+  const cur = setScreens(t)
+  fxFor(t, cur)
+  setCaption(t)
+
+  // stamp shockwave and flash
+  const d = t - HIT.stamp
+  if (d > 0 && d < 0.9) {
+    const p = OUT(d / 0.9), size = 200 + p * (VERT ? 1700 : 1900)
+    wave.style.cssText += `;left:${L.cx - size / 2}px;top:${L.cy - size / 2 - 80}px;width:${size}px;height:${size}px;opacity:${(1 - p) * 0.9}`
+  } else wave.style.opacity = 0
+  const fl = Math.max(0, 1 - Math.abs(d + 0.02) * 9) * 0.5 + Math.max(0, 1 - Math.abs(t - HIT.outro) * 8) * 0.7 + Math.max(0, 1 - Math.abs(t - HIT.title) * 10) * 0.3
+  flash.style.opacity = Math.min(0.85, fl).toFixed(3)
+
+  // outro
+  const oIn = t > 23.1
+  outro.style.display = oIn ? 'block' : 'none'
+  if (oIn) {
+    const ot = t - HIT.outro
+    const a1 = prog(t, HIT.outro - 0.05, 0.2)
+    oFs.style.opacity = (a1 * (rnd('ofs-' + Math.floor(t * 30)) < 0.1 && ot < 0.4 ? 0.3 : 1)).toFixed(3)
+    oFs.style.transform = `scale(${1.25 - 0.25 * OUT(clamp01(ot / 1.1))})`
+    oTag.style.opacity = prog(t, V.outro.t + 1.35, 0.6, OUT).toFixed(3)
+    oTag.style.transform = `translateY(${(1 - prog(t, V.outro.t + 1.35, 0.6, OUT)) * 30}px)`
+    const dk = prog(t, 25.4, 0.6, OUT)
+    oDate.style.opacity = dk.toFixed(3); oDate.style.transform = `translateY(${(1 - dk) * 20}px)`
+    const vk = prog(t, 25.65, 0.6, OUT)
+    oVenue.style.opacity = (vk * 0.8).toFixed(3)
+    const lk = prog(t, 26.2, 0.7, OUT)
+    oLogo.style.opacity = lk.toFixed(3); oLogo.style.transform = `translateY(${(1 - lk) * 40}px)`
+    const ck = prog(t, 27.2, 0.6, OUT)
+    oCta.style.opacity = (ck * (0.75 + 0.25 * Math.sin(t * 4))).toFixed(3)
+  }
+
+  // grain jitter (24 Hz, seeded) and global fade
+  const gq = Math.floor(t * 24)
+  grain.style.transform = `translate(${Math.floor(rnd('gx' + gq) * 100)}px, ${Math.floor(rnd('gy' + gq) * 100)}px)`
+  fade.style.opacity = (1 - prog(t, 0, 0.7, STD) + prog(t, CUES.duration - 0.6, 0.6, STD)).toFixed(3)
+}
+
+window.READY = Promise.all([document.fonts.ready, SLAM.decode().catch(() => {}), ...Object.values(imgs).map((i) => (i.decode ? i.decode().catch(() => {}) : Promise.resolve()))])
+</script>
+</body>
+</html>

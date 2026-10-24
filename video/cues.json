@@ -1,0 +1,14 @@
+{
+  "duration": 29.8,
+  "fps": 30,
+  "voice": [
+    { "key": "hook", "t": 0.9, "dur": 2.44 },
+    { "key": "signin", "t": 4.0, "dur": 3.2 },
+    { "key": "map", "t": 7.6, "dur": 2.78 },
+    { "key": "qr", "t": 10.8, "dur": 4.54 },
+    { "key": "notes", "t": 15.4, "dur": 2.96 },
+    { "key": "submit", "t": 19.0, "dur": 3.37 },
+    { "key": "outro", "t": 23.4, "dur": 3.87 }
+  ],
+  "hits": { "stamp": 13.7, "title": 2.15, "outro": 23.4, "send": 22.1 }
+}
