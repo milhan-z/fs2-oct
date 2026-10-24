@@ -8,7 +8,7 @@ const OUT_H = Math.round(OUT_W / RATIO)
 
 const isHeic = (f: File) => /hei[cf]$/i.test(f.name) || /hei[cf]/i.test(f.type)
 
-/** Decodes any photo the browser or heic2any can read. Throws a readable message otherwise. */
+/** Decodes any photo the browser or heic-to can read. Throws a readable message otherwise. */
 async function decode(file: File): Promise<ImageBitmap> {
   try {
     return await createImageBitmap(file)
@@ -16,10 +16,10 @@ async function decode(file: File): Promise<ImageBitmap> {
     if (!isHeic(file)) throw new Error('This photo could not be opened. Try a JPG or PNG.')
   }
   try {
-    const { default: heic2any } = await import('heic2any')
-    const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 })
-    return await createImageBitmap(Array.isArray(out) ? out[0] : out)
-  } catch {
+    const { heicTo } = await import('heic-to')
+    return await createImageBitmap(await heicTo({ blob: file, type: 'image/jpeg', quality: 0.9 }))
+  } catch (e) {
+    console.error('HEIC conversion failed', e)
     throw new Error('This HEIC photo could not be converted. Export it as JPG and try again.')
   }
 }
