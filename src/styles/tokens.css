@@ -1,7 +1,56 @@
 @import 'tailwindcss';
 
-/* Design tokens — SPEC §6 (GSM FS² October) */
+/* Design tokens — SPEC §6 (GSM palette) + docs/DESIGN.md (materials, type, shape, motion).
+   The DESIGN.md block is the contract for the redesign; the legacy block below it is removed
+   screen by screen as the Booklet redesign lands. */
 @theme {
+  /* --- materials (DESIGN.md §2) --- */
+  --color-night-0: #120a0b;
+  --color-night-1: #1c0d0f;
+  --color-night-ink: #1e1214; /* printed dark map sheet */
+  --color-paper-edge: #e2d6c2;
+  --color-cover: #12304a;
+  --color-cover-dark: #0c2438;
+  --color-emboss: #c9a45c;
+  --color-stamp: #b3261e;
+  --color-ticket: #fbf7ee;
+  --color-on-red: #fbf3ea; /* text on red ink — never pure #fff */
+  --color-tape: #0d2a4a;
+
+  /* --- shape (DESIGN.md §4) --- */
+  --radius-page: 3px;
+  --radius-input: 4px;
+  --radius-btn: 6px;
+
+  /* --- spacing scale 4/8/12/20/32/48 --- */
+  --spacing-s1: 4px;
+  --spacing-s2: 8px;
+  --spacing-s3: 12px;
+  --spacing-s4: 20px;
+  --spacing-s5: 32px;
+  --spacing-s6: 48px;
+
+  /* --- type (DESIGN.md §3) --- */
+  --text-body: 15px;
+  --text-body--line-height: 22px;
+  --text-page-title: 34px; /* 2.27× body */
+  --text-page-title--line-height: 38px;
+  --text-section: 20px;
+  --text-label: 10.5px;
+  --text-data: 14px;
+
+  /* --- light: one source, top-left (shadows fall down-right) --- */
+  --shadow-lift: 3px 6px 14px rgba(18, 10, 11, 0.38), 1px 2px 3px rgba(18, 10, 11, 0.3);
+  --shadow-contact: 0 1px 1px rgba(18, 10, 11, 0.35);
+  --shadow-page-edge: 1.5px 0 0 var(--color-paper-edge), 3px 0 0 #d4c6ae, 4.5px 0 0 #c8b89e;
+
+  /* --- motion (DESIGN.md §6) --- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-page: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-ui: 200ms;
+  --duration-page: 520ms;
+  --duration-moment: 700ms;
+
   --color-bg-0: #0f0709;
   --color-bg-1: #1a0a0c;
   --color-glow: #4a1215;
@@ -15,10 +64,10 @@
   --color-navy-2: #102d44;
   --color-gold: #d8ae54;
   --color-cream: #f4e8e2;
-  --color-paper: #f6f1e7;
+  --color-paper: #f3ebdd; /* DESIGN.md passport paper */
   --color-muted: #cdbfb8;
   --color-line: #4a2a2c;
-  --color-ink: #1d2433;
+  --color-ink: #2a1e1a; /* ink, never #000 */
   --color-ok: #43a047;
   --color-ok-bright: #7fd18a;
 
@@ -67,7 +116,80 @@
   }
 }
 
+/* paper noise + guilloche as reusable backgrounds (DESIGN.md §2) */
+:root {
+  --tex-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.12 0 0 0 0 0.10 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --tex-guilloche: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120' fill='none' stroke='%2312304a' stroke-width='.6'%3E%3Cpath d='M0 60c15-18 30-18 45 0s30 18 45 0 30-18 45 0M0 70c15-18 30-18 45 0s30 18 45 0 30-18 45 0M0 50c15-18 30-18 45 0s30 18 45 0 30-18 45 0'/%3E%3Ccircle cx='60' cy='60' r='26'/%3E%3Ccircle cx='60' cy='60' r='34' stroke-dasharray='2 3'/%3E%3C/svg%3E");
+}
+
 @layer components {
+  /* --- DESIGN.md materials --- */
+  .mat-night {
+    background-color: var(--color-night-0);
+    background-image: var(--tex-noise), linear-gradient(180deg, var(--color-night-0), var(--color-night-1));
+    background-blend-mode: soft-light, normal;
+    color: var(--color-cream);
+  }
+  .mat-paper {
+    background-color: var(--color-paper);
+    background-image: var(--tex-noise), var(--tex-guilloche);
+    background-size: 160px 160px, 120px 120px;
+    background-blend-mode: multiply, normal;
+    color: var(--color-ink);
+    border-radius: var(--radius-page);
+  }
+  .mat-cover {
+    background-color: var(--color-cover);
+    background-image: var(--tex-noise),
+      repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 3px);
+    color: var(--color-emboss);
+  }
+  .mat-ticket {
+    background-color: var(--color-ticket);
+    background-image: var(--tex-noise);
+    color: var(--color-ink);
+    border-radius: 2px;
+  }
+  .emboss {
+    text-shadow: 0 1px 0 rgba(255, 236, 190, 0.18), 0 -1px 0 rgba(0, 0, 0, 0.45);
+  }
+  .doc-label {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: var(--text-label);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--color-ink) 70%, transparent);
+  }
+  .doc-data {
+    font-family: var(--font-mono);
+    font-size: var(--text-data);
+    color: var(--color-ink);
+  }
+  .page-title {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: var(--text-page-title);
+    line-height: var(--text-page-title--line-height);
+    color: var(--color-ink);
+  }
+  .btn-primary {
+    background: var(--color-stamp);
+    color: var(--color-on-red);
+    border-radius: var(--radius-btn);
+  }
+  .btn-line {
+    border: 1px solid color-mix(in srgb, var(--color-ink) 45%, transparent);
+    color: var(--color-ink);
+    border-radius: var(--radius-btn);
+  }
+  .rule-row {
+    border-bottom: 1.5px solid color-mix(in srgb, var(--color-ink) 40%, transparent);
+    border-radius: var(--radius-input) var(--radius-input) 0 0;
+    background: transparent;
+  }
+
   .screen-bg {
     background: radial-gradient(90% 50% at 50% 35%, #3a0d10 0%, #1a0a0c 55%, #0b1020 100%);
   }
