@@ -1,7 +1,7 @@
 import { motion } from 'motion/react'
 import { useNavigate } from 'react-router'
 import { useContent } from '../../app/providers'
-import { useParticipant } from '../../app/participant'
+import { useParticipant, useSignOut } from '../../app/participant'
 import { resumeDone } from '../../data/rules'
 import { fmtDeadline, fmtTime } from '../../data/time'
 import { InkIcon } from '../../booklet/icons'
@@ -23,6 +23,7 @@ export function Passport() {
   const nav = useNavigate()
   const { content } = useContent()
   const { state, prog } = useParticipant()
+  const signOut = useSignOut()
   if (!content || !state || !prog) return <PageSkeleton photo />
 
   const booths = [...content.booths].sort((a, b) => a.sort - b.sort)
@@ -159,9 +160,14 @@ export function Passport() {
         )}
       </section>
 
-      <button type="button" onClick={() => nav('/guide')} className="mt-6 min-h-11 self-start text-[14px] text-ink/65 underline underline-offset-4">
-        Guide & help
-      </button>
+      <div className="mt-6 flex items-center justify-between">
+        <button type="button" onClick={() => nav('/guide')} className="min-h-11 text-[14px] text-ink/65 underline underline-offset-4">
+          Guide & help
+        </button>
+        <button type="button" onClick={signOut} className="min-h-11 text-[14px] text-ink/65 underline underline-offset-4">
+          Sign out
+        </button>
+      </div>
     </div>
   )
 }

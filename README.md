@@ -20,7 +20,7 @@ Mode mock menyimpan semua data di **browser itu saja** (localStorage). Tidak ada
 - **Mode simulasi**: scan terbuka kapan saja.
 - **Cap B1–B4**: mensimulasikan petugas mengonfirmasi peserta yang sedang login → layar QR/Peta langsung memutar momen cap.
 - **Isi resume otomatis**, **+12 peserta dummy** (PIN `1234`), **Reset semua**.
-- Daftar akses demo: admin `/admin` (sandi `fs2admin`), petugas `/staff/korea`, `/staff/taiwan`, `/staff/germany`, `/staff/booth-4` (PIN mock `1111`/`2222`/`3333`/`4444`).
+- Daftar akses demo: admin `/admin` (sandi `fs2admin`); staff `/staff` dengan PIN staff bersama mock `555555` lalu pilih booth (bisa ganti booth tanpa login ulang). PIN khusus per booth (`1111`/`2222`/`3333`/`4444`) tetap bisa di link `/staff/<slug>`.
 
 ### Alur demo ke PIC (±5 menit)
 1. `/?dev=1` → **Buka Paspor** → isi NRP baru → buat paspor → foto → animasi denah → **Mulai**.
@@ -32,7 +32,7 @@ Mode mock menyimpan semua data di **browser itu saja** (localStorage). Tidak ada
 
 ## Rute
 Peserta: `/` (sampul) → `/signin` → `/photo` (kamera polaroid pop-up) → `/onboarding` → halaman penuh `/map` · `/passport` · `/status` · `/guide`. Pop-up di atas halaman: `/qr`, `/visa/:booth`, `/stamp/:booth`, `/exit`. Bingkai buku hanya untuk sampul, sign-in, dan foto. Perbandingan sebelum/sesudah: `docs/BEFORE-AFTER.md`.
-Petugas: `/staff/<slug>`. Admin: `/admin` (`/admin/submissions`, `/participants`, `/content`, `/settings`, `/export`).
+Staff: `/staff` (satu PIN staff bersama → pilih booth; dropdown booth di layar scan) atau langsung `/staff/<slug>`. Admin: `/admin` (peserta: edit NRP/nama/departemen, hapus, reset PIN; Booth & konten: PIN staff bersama) (`/admin/submissions`, `/participants`, `/content`, `/settings`, `/export`).
 
 ## Aset GSM (dari Figma FS2 › "FS2 Oct 26")
 `public/assets/gsm/`: `logo-october.webp` (badge header), `logo-strip.webp` (logo instansi, sampul & Guide), `flower.svg` (bunga Demogorgon), `clock.svg` (jam kakek, Guide), `pine.webp` + `smoke1/2.svg` (onboarding), `skyline.svg` (Status), `clouds.svg` (momen cap). Lampu natal digambar ulang sebagai SVG agar tiap bohlam bisa dianimasikan.

@@ -24,7 +24,7 @@ export function CoverScenery() {
     <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
       {/* partner logos, printed at the top like the GSM header */}
       <div className="absolute inset-x-0 top-2 flex justify-center px-6">
-        <LogoStrip className="w-full max-w-[300px] rounded-[2px] px-3 py-1 opacity-95" />
+        <LogoStrip className="w-full max-w-[320px]" />
       </div>
 
       {/* clouds, a red Upside Down glow on the horizon, the town skyline and the forest */}
@@ -68,12 +68,12 @@ export function CoverScenery() {
         ))}
 
       {/* Demogorgon flowers growing out of the dark */}
-      <DemogorgonFlower size={88} rotate={-18} className="absolute bottom-[118px] -left-6 opacity-90" />
-      <DemogorgonFlower size={54} rotate={24} className="absolute right-[-14px] bottom-[190px] opacity-80" />
+      <DemogorgonFlower size={80} rotate={-18} className="absolute bottom-[214px] -left-7 opacity-90" />
+      <DemogorgonFlower size={54} rotate={24} className="absolute right-[-14px] bottom-[236px] opacity-80" />
       <DemogorgonFlower size={38} rotate={8} className="absolute top-[38%] -right-3 opacity-60" />
       <DemogorgonFlower size={30} rotate={-30} className="absolute top-[22%] -left-2 opacity-50" />
-      <DemogorgonFlower size={64} rotate={12} className="absolute right-[18%] bottom-[150px] opacity-75" />
-      <DemogorgonFlower size={42} rotate={-12} className="absolute bottom-[175px] left-[24%] opacity-60" />
+      <DemogorgonFlower size={44} rotate={12} className="absolute right-[4%] bottom-[196px] opacity-70" />
+      <DemogorgonFlower size={32} rotate={-12} className="absolute bottom-[200px] left-[16%] opacity-55" />
       <DemogorgonFlower size={26} rotate={40} className="absolute top-[52%] left-[6%] opacity-45" />
     </div>
   )
@@ -91,14 +91,14 @@ export function CoverFooter({ onOpen }: { onOpen: () => void }) {
 
   return (
     <motion.div
-      className="absolute inset-x-0 bottom-0 z-[4] px-6 pb-[max(14px,env(safe-area-inset-bottom))]"
+      className="absolute inset-x-0 bottom-0 z-[4] bg-gradient-to-t from-[#120a0b] via-[#120a0b]/85 to-transparent px-6 pt-10 pb-[max(14px,env(safe-area-inset-bottom))]"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, transition: { duration: 0.15 } }}
       transition={{ duration: 0.4, delay: 0.5 }}
     >
-      <p className="text-[15px] font-semibold text-cream">{tanggal}</p>
-      <p className="mt-0.5 text-[13px] text-cream/75">
+      <p className="text-[16px] font-semibold text-cream [text-shadow:0_1px_3px_rgba(0,0,0,.8)]">{tanggal}</p>
+      <p className="mt-0.5 text-[13px] text-cream/85 [text-shadow:0_1px_3px_rgba(0,0,0,.8)]">
         {jam} · {content?.event.tempat}
       </p>
       <motion.button type="button" onClick={onOpen} whileTap={{ scale: 0.98 }} transition={{ duration: 0.06 }} className="btn btn-primary mt-4 w-full">

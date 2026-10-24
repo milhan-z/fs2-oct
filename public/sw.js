@@ -1,5 +1,5 @@
 // Minimal service worker: cache-first for built assets & images, network-first for navigation.
-const CACHE = 'fs2-v1'
+const CACHE = 'fs2-v2'
 self.addEventListener('install', (e) => { self.skipWaiting() })
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()))

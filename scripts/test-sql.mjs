@@ -172,6 +172,30 @@ const raw = await call('admin_export_raw', [at])
 const rawText = JSON.stringify(raw)
 ok(raw.participants.length === 1 && raw.submissions.length === 1, 'export raw rows')
 ok(!rawText.includes('$2a$') && !rawText.includes(st.qrToken) && !rawText.includes('photo'), 'export has no hash / QR token / photo path')
+// --- shared staff (runner) PIN + booth switching
+const master = await call('admin_reset_staff_master_pin', [at])
+ok(/^\d{6}$/.test(master), 'shared staff PIN is 6 digits')
+ok(!(await call('staff_login', ['', '000000'])).ok, 'wrong shared PIN rejected')
+const root = await call('staff_login', ['', master])
+ok(root.ok && root.roaming && !root.boothId, 'shared PIN opens a roaming session')
+const sw = await call('staff_switch', [root.token, 'taiwan'])
+ok(sw.boothId === 'B2' && (await call('staff_history', [sw.token])).length >= 0, 'runner switches to a booth and works there')
+const viaBooth = await call('staff_login', ['germany', master])
+ok(viaBooth.ok && viaBooth.boothId === 'B3', 'shared PIN also works on a booth link')
+ok((await call('staff_switch', [viaBooth.token, 'korea'])).boothId === 'B1', 'switch from a booth session')
+const boothOnly = await call('staff_login', ['korea', creds.staffPins.B1])
+await expectErr('staff_switch', [boothOnly.token, 'taiwan'], 'auth', 'booth-only PIN cannot switch booths')
+
+// --- admin edits / deletes a participant
+await call('admin_update_participant', [at, st.participant.id, JSON.stringify({ nrp: '5025240099', nama: 'Peserta Diubah', departemen: 'Informatics', angkatan: '2023' })])
+ok((await call('get_my_state', [(await call('participant_login', ['5025240099', newPin])).token])).participant.nama === 'Peserta Diubah', 'admin edits NRP / name')
+const other = await call('participant_register', ['5025240111', 'Peserta Lain', 'Informatics', '2024', '1234'])
+await expectErr('admin_update_participant', [at, st.participant.id, JSON.stringify({ nrp: '5025240111', nama: 'X Y Z', departemen: 'TI', angkatan: '' })], 'exists', 'edit rejects a taken NRP')
+const otherId = (await call('get_my_state', [other.token])).participant.id
+await call('admin_delete_participant', [at, otherId])
+await expectErr('get_my_state', [other.token], 'auth', 'deleted participant is signed out')
+ok((await one(`select count(*)::int as n from public.participants where id = $1`, [otherId])).n === 0, 'admin deletes participant')
+
 const edgeS = await call('edge_session', [at])
 ok(edgeS.role === 'admin', 'edge_session resolves token (service role only)')
 

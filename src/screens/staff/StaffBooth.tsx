@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useAnimate, useReducedMotion } from 'motion/react'
 import QrScanner from 'qr-scanner'
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import { useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../../app/providers'
 import { useLive } from '../../app/useAsync'
 import { api, isMock } from '../../data/api'
@@ -13,15 +13,34 @@ import { Icon } from '../../components/decor'
 import { EASE_OUT } from '../../motion/presets'
 import { vibrate } from '../../app/sound'
 
-/** S1 — booth PIN, then S2 scanner / S3 history. */
+/** S1 — staff PIN (shared or booth), then S2 scanner / S3 history. Runners switch booths freely. */
 export default function StaffBooth() {
   const { slug = '' } = useParams()
   const { content } = useContent()
   const [session, setSession] = useState<StaffSession | null>(() => api.staffSession(slug))
-  if (!content) return <Loading />
+  const [switching, setSwitching] = useState(() => !api.staffSession(slug) && api.staffCanSwitch())
+
+  // signed in with the shared PIN: open this booth without asking again
+  useEffect(() => {
+    const s = api.staffSession(slug)
+    setSession(s)
+    if (s || !api.staffCanSwitch()) return setSwitching(false)
+    setSwitching(true)
+    let live = true
+    api
+      .staffSwitch(slug)
+      .then((r) => live && setSession(r))
+      .catch(() => {})
+      .finally(() => live && setSwitching(false))
+    return () => {
+      live = false
+    }
+  }, [slug])
+
+  if (!content || switching) return <Loading />
   const booth = content.booths.find((b) => b.slug === slug)
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[480px] flex-col bg-[#111318] text-cream">
+    <main key={slug} className="mx-auto flex min-h-dvh max-w-[480px] flex-col bg-[#111318] text-cream">
       {!booth ? (
         <p className="p-6">Booth not found. Check the link from the committee.</p>
       ) : session ? (
@@ -33,7 +52,7 @@ export default function StaffBooth() {
   )
 }
 
-function StaffLogin({ slug, boothNama, onDone }: { slug: string; boothNama: string; onDone: (s: StaffSession) => void }) {
+function StaffLogin({ slug, boothNama, onDone }: { slug: string; boothNama: string; onDone: (s: StaffSession | null) => void }) {
   const [pin, setPin] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
@@ -51,9 +70,9 @@ function StaffLogin({ slug, boothNama, onDone }: { slug: string; boothNama: stri
   return (
     <form onSubmit={submit} className="flex flex-1 flex-col px-5 pt-10 pb-8">
       <p className="text-[14px] text-muted">Officer · {boothNama} booth</p>
-      <h1 className="text-[30px] font-extrabold text-white">Enter the booth PIN</h1>
+      <h1 className="text-[30px] font-extrabold text-white">Enter the staff PIN</h1>
       <label htmlFor="staff-pin" className="mt-6 text-[15px] font-bold">
-        Booth PIN
+        Staff PIN
       </label>
       <input
         id="staff-pin"
@@ -66,7 +85,7 @@ function StaffLogin({ slug, boothNama, onDone }: { slug: string; boothNama: stri
         onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
       />
       <ErrorText>{err}</ErrorText>
-      <p className="mt-2 text-[14px] text-muted">The committee gives the PIN to booth officers.</p>
+      <p className="mt-2 text-[14px] text-muted">The shared staff PIN works for every booth. The committee gives it to staff and runners.</p>
       <button type="submit" className="btn mt-auto w-full bg-[#1f7a4a] text-white disabled:bg-[#2a3530] disabled:text-[#7d8a83]" disabled={busy || pin.length < 4}>
         {busy ? <Spinner /> : 'Sign in'}
       </button>
@@ -195,7 +214,7 @@ function Scanner({ slug, session, onLogout }: { slug: string; session: StaffSess
     <div className="flex min-h-dvh flex-col px-4 pt-5 pb-5">
       <div className="flex items-start justify-between px-1">
         <div>
-          <p className="text-[13px] text-muted">Officer · {session.boothNama} booth</p>
+          <BoothSwitch slug={slug} boothNama={session.boothNama} />
           <h1 className="text-[26px] font-extrabold text-white">{tab === 'scan' ? 'Rapid scan' : 'History'}</h1>
         </div>
         <div className="text-right">
@@ -404,6 +423,37 @@ function History({ slug, items, reload, onToast }: { slug: string; items: Awaite
         ))}
         {!list.length && <li className="p-4 text-center text-[14px] text-muted">No confirmed visits yet.</li>}
       </ul>
+    </div>
+  )
+}
+
+/** Booth picker in the scanner header (shared-PIN sessions only). */
+function BoothSwitch({ slug, boothNama }: { slug: string; boothNama: string }) {
+  const { content } = useContent()
+  const nav = useNavigate()
+  if (!api.staffCanSwitch() || !content) return <p className="text-[13px] text-muted">Officer · {boothNama} booth</p>
+  return (
+    <div className="flex items-center gap-2">
+      <label htmlFor="booth-switch" className="text-[13px] text-muted">
+        Booth
+      </label>
+      <select
+        id="booth-switch"
+        value={slug}
+        onChange={(e) => nav(`/staff/${e.target.value}`)}
+        className="min-h-9 rounded-lg border border-[#2c313c] bg-[#1b1f27] px-2 text-[16px] font-semibold text-white"
+      >
+        {[...content.booths]
+          .sort((a, b) => a.sort - b.sort)
+          .map((b) => (
+            <option key={b.id} value={b.slug}>
+              {b.nama}
+            </option>
+          ))}
+      </select>
+      <Link to="/staff" className="sr-only">
+        All booths
+      </Link>
     </div>
   )
 }

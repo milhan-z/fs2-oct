@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useContent } from '../../app/providers'
 import { api } from '../../data/api'
+import { useSignOut } from '../../app/participant'
 import { LogoStrip } from '../../components/decor'
 import { fmtDeadline, fmtTime } from '../../data/time'
 import { setSoundEnabled, soundEnabled, sfx } from '../../app/sound'
@@ -13,6 +14,7 @@ export function Guide() {
   const nav = useNavigate()
   const { content } = useContent()
   const [sound, setSound] = useState(soundEnabled())
+  const signOut = useSignOut()
   if (!content) return <PageSkeleton />
   const { rules, settings, event } = content
   const loggedIn = api.hasSession()
@@ -105,10 +107,7 @@ export function Guide() {
           <button
             type="button"
             className="min-h-12 text-left text-[14px] text-ink/65 underline underline-offset-4"
-            onClick={() => {
-              api.logout()
-              nav('/', { replace: true })
-            }}
+            onClick={signOut}
           >
             Sign out of the passport on this phone
           </button>

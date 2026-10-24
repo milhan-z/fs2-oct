@@ -44,6 +44,7 @@ export function ContentEditor() {
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(320px,420px)_1fr]">
         <MapEditor booths={booths} facilities={content.facilities} onSaved={done} />
         <div className="flex flex-col gap-5">
+          <StaffPinCard />
           {booths.map((b) => (
             <BoothCard key={b.id} booth={b} speakers={content.speakers.filter((s) => s.boothId === b.id)} onSaved={done} />
           ))}
@@ -52,6 +53,35 @@ export function ContentEditor() {
         </div>
       </div>
     </section>
+  )
+}
+
+/** One shared staff PIN: staff and runners sign in once at /staff and pick any booth. */
+function StaffPinCard() {
+  const [pin, setPin] = useState('')
+  return (
+    <div className="rounded-2xl border border-[#e4ddd0] bg-white p-4">
+      <h2 className="text-[17px] font-bold">Staff PIN (all booths)</h2>
+      <p className="mt-1 text-[14px] text-[#6b6058]">
+        Staff and runners sign in once at <span className="font-mono">/staff</span> and choose the booth — switching booths needs no new sign-in. A new PIN signs out everyone using the old one.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          className="min-h-10 rounded-lg border border-[#d5cabd] px-3 font-semibold"
+          onClick={async () => {
+            if (confirm('Create a new shared staff PIN? Staff signed in with the old PIN will be signed out.')) setPin(await api.adminResetStaffMasterPin())
+          }}
+        >
+          New staff PIN
+        </button>
+        {pin && (
+          <span className="rounded-lg bg-[#fff7e0] px-3 py-2" role="alert">
+            New staff PIN: <b className="font-mono text-[18px] tracking-[0.2em]">{pin}</b> (shown once)
+          </span>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -231,7 +261,7 @@ function BoothCard({ booth, speakers, onSaved }: { booth: Booth; speakers: Speak
             if (confirm(`Create a new officer PIN for ${b.nama}? Signed-in officers will be signed out.`)) setPin(await api.adminResetStaffPin(b.id))
           }}
         >
-          Reset officer PIN
+          Booth-only PIN
         </button>
         {pin && (
           <span className="rounded-lg bg-[#fff7e0] px-3 py-2" role="alert">

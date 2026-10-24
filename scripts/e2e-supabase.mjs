@@ -1,6 +1,6 @@
 // End-to-end test against the real Supabase backend (dev server in supabase mode).
 // Test participants use NRP prefix 99990… — remove them afterwards with the cleanup SQL in README.
-// Usage: FS2_ADMIN_PW=… FS2_PINS='{"B1":"…",…}' node scripts/e2e-supabase.mjs [baseUrl]
+// Usage: FS2_ADMIN_PW=… FS2_STAFF_PIN=… FS2_PINS='{"B1":"…",…}' node scripts/e2e-supabase.mjs [baseUrl]
 import { chromium } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { mkdirSync, readFileSync } from 'node:fs'
@@ -15,8 +15,9 @@ const env = Object.fromEntries(
     .map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1).trim()]),
 )
 const ADMIN_PW = process.env.FS2_ADMIN_PW
+const STAFF_PIN = process.env.FS2_STAFF_PIN
 const PINS = JSON.parse(process.env.FS2_PINS ?? '{}')
-if (!ADMIN_PW || !PINS.B1) throw new Error('set FS2_ADMIN_PW and FS2_PINS')
+if (!ADMIN_PW || !PINS.B1 || !STAFF_PIN) throw new Error('set FS2_ADMIN_PW, FS2_PINS and FS2_STAFF_PIN')
 
 let failures = 0
 const ok = (c, label) => {
@@ -89,8 +90,7 @@ try {
   }
   await page.waitForURL(/\/(photo|map)/)
   if (page.url().endsWith('/photo')) {
-    await wait(1200)
-    await page.getByRole('button', { name: 'Take photo' }).click()
+    await page.getByRole('button', { name: 'Take photo' }).and(page.locator(':enabled')).click()
     await wait(600)
     await page.getByRole('button', { name: 'Use this photo' }).click()
     await page.waitForURL(/\/(onboarding|map)/, { timeout: 20000 })
@@ -105,12 +105,16 @@ try {
   await shot(page, '02-qr')
 
   for (const [i, b] of [['B1', 'korea'], ['B2', 'taiwan'], ['B3', 'germany'], ['B4', 'booth-4']].entries()) {
-    await staff.goto(`${BASE}/staff/${b[1]}`)
-    await staff.getByRole('heading', { name: /Enter the booth PIN|Rapid scan/ }).waitFor()
-    if (await staff.getByLabel('Booth PIN').count()) {
-      await staff.getByLabel('Booth PIN').fill(PINS[b[0]])
+    if (i === 0) {
+      // one shared staff PIN, then the runner just switches booths
+      await staff.goto(`${BASE}/staff`)
+      await staff.getByLabel('Staff PIN').fill(STAFF_PIN)
       await staff.getByRole('button', { name: 'Sign in' }).click()
+      await staff.getByRole('heading', { name: /Which booth/ }).waitFor()
+      ok(true, 'shared staff PIN sign-in')
     }
+    await staff.goto(`${BASE}/staff/${b[1]}`)
+    await staff.getByRole('heading', { name: 'Rapid scan' }).waitFor()
     await staff.getByRole('button', { name: /Manual entry/ }).click()
     await staff.getByLabel('Last 4 digits of NRP').fill(NRP.slice(-4))
     await staff.getByRole('button', { name: 'Search' }).click()

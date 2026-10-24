@@ -3,7 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router'
 import { api, isMock } from '../../data/api'
-import { useParticipant } from '../../app/participant'
+import { useParticipant, useSignOut } from '../../app/participant'
 import { ErrorText } from '../../components/ui'
 import { sfx, vibrate } from '../../app/sound'
 import { InkIcon } from '../../booklet/icons'
@@ -46,6 +46,7 @@ export function Photo() {
   const retake = params.has('ulang')
   const reduce = useReducedMotion()
   const { state, reload } = useParticipant()
+  const signOut = useSignOut()
   const boxRef = useRef<HTMLButtonElement>(null)
   const [camOpen, setCamOpen] = useState(false)
   const [pasted, setPasted] = useState<Shot | null>(null)
@@ -180,6 +181,11 @@ export function Photo() {
           </motion.button>
         )}
       </div>
+      {!busy && !retake && (
+        <button type="button" onClick={signOut} className="mt-3 min-h-11 self-center text-[14px] text-ink/65 underline underline-offset-4">
+          Not {p.nama.split(' ')[0]}? Sign out
+        </button>
+      )}
       <PageNo n={2} />
 
       {createPortal(<AnimatePresence>{camOpen && <PolaroidCamera key="cam" boxRef={boxRef} name={p.nama} onClose={() => setCamOpen(false)} onUse={onPasted} />}</AnimatePresence>, document.body)}
@@ -202,6 +208,7 @@ function PolaroidCamera({ boxRef, name, onClose, onUse }: { boxRef: React.RefObj
   const [shot, setShot] = useState<Shot | null>(null)
   const [flash, setFlash] = useState(false)
   const [leaving, setLeaving] = useState(false)
+  const [live, setLive] = useState(false)
 
   const stop = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop())
@@ -210,6 +217,7 @@ function PolaroidCamera({ boxRef, name, onClose, onUse }: { boxRef: React.RefObj
 
   const start = useCallback(async () => {
     stop()
+    setLive(false)
     setCamError('')
     try {
       const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false })
@@ -321,7 +329,7 @@ function PolaroidCamera({ boxRef, name, onClose, onUse }: { boxRef: React.RefObj
       {/* the polaroid */}
       <div ref={scope} className="relative w-full max-w-[290px] bg-[#f7f3ea] p-3 pb-0 shadow-[0_18px_40px_rgba(0,0,0,.55)]" style={{ transformOrigin: 'center' }}>
         <div ref={winRef} className="relative aspect-[3/4] w-full overflow-hidden bg-[#1c2026]">
-          {!shot && <video ref={videoRef} playsInline muted className="h-full w-full object-cover" style={{ transform: facing === 'user' ? 'scaleX(-1)' : undefined }} aria-label="Camera preview" />}
+          {!shot && <video ref={videoRef} onLoadedData={() => setLive(true)} playsInline muted className="h-full w-full object-cover" style={{ transform: facing === 'user' ? 'scaleX(-1)' : undefined }} aria-label="Camera preview" />}
           {shot && <img src={shot.url} alt="Your attendance photo" className="h-full w-full object-cover" />}
           {!shot && !camError && (
             <svg viewBox="0 0 100 133" className="pointer-events-none absolute inset-0 h-full w-full opacity-45" aria-hidden="true">
@@ -360,9 +368,10 @@ function PolaroidCamera({ boxRef, name, onClose, onUse }: { boxRef: React.RefObj
                 type="button"
                 aria-label="Take photo"
                 onClick={capture}
+                disabled={!live}
                 whileTap={{ scale: 0.94 }}
                 transition={{ duration: 0.06 }}
-                className="flex h-[68px] w-[68px] items-center justify-center justify-self-center rounded-full border-[3px] border-cream"
+                className="flex h-[68px] w-[68px] items-center justify-center justify-self-center rounded-full border-[3px] border-cream disabled:opacity-50"
               >
                 <span className="h-12 w-12 rounded-full bg-stamp" />
               </motion.button>

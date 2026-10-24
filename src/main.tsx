@@ -12,6 +12,15 @@ import '@fontsource/courier-prime/700.css'
 import './styles/tokens.css'
 import { App } from './app/App'
 
+// open the connection to the backend while the app boots (TLS handshake off the critical path)
+if (import.meta.env.VITE_DATA_MODE === 'supabase' && import.meta.env.VITE_SUPABASE_URL) {
+  const l = document.createElement('link')
+  l.rel = 'preconnect'
+  l.href = new URL(import.meta.env.VITE_SUPABASE_URL).origin
+  l.crossOrigin = 'anonymous'
+  document.head.appendChild(l)
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

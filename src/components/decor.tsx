@@ -27,8 +27,8 @@ export function FsBadge({ size = 44 }: { size?: number }) {
 /** Official partner logos strip (Kemitraan Global · ITS · …) from the GSM header. */
 export function LogoStrip({ className = '' }: { className?: string }) {
   return (
-    <div className={`rounded-[2px] bg-[#fbf7ee] px-3 py-1 ${className}`}>
-      <img src="/assets/gsm/logo-strip.webp" alt="Directorate of Global Partnership ITS and partners" className="mx-auto h-auto w-full max-w-[300px]" draggable={false} />
+    <div className={`rounded-full bg-white px-4 py-1.5 shadow-[0_2px_6px_rgba(0,0,0,0.35)] ${className}`}>
+      <img src="/assets/gsm/logo-partners.webp" alt="Directorate of Global Partnership ITS and partners" width={624} height={57} className="mx-auto block h-auto w-full" draggable={false} />
     </div>
   )
 }

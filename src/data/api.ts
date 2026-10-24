@@ -42,8 +42,13 @@ export interface Api {
   submit(): Promise<void>
 
   // staff
-  staffLogin(slug: string, pin: string): Promise<StaffSession>
+  /** booth PIN or the shared staff PIN; slug '' = shared PIN only, signs in without a booth */
+  staffLogin(slug: string, pin: string): Promise<StaffSession | null>
   staffSession(slug: string): StaffSession | null
+  /** signed in with the shared staff PIN → may switch booths without a PIN */
+  staffCanSwitch(): boolean
+  staffSwitch(slug: string): Promise<StaffSession>
+  /** signs the officer out of every booth on this device */
   staffLogout(slug: string): void
   staffResolveTokens(slug: string, tokens: string[]): Promise<ResolvedToken[]>
   staffFindByLast4(slug: string, last4: string): Promise<ResolvedToken[]>
@@ -63,8 +68,14 @@ export interface Api {
   adminListParticipants(q: string): Promise<AdminParticipantRow[]>
   /** returns the new PIN — shown once to the admin */
   adminResetPin(participantId: string): Promise<string>
+  /** correct NRP / name / department / class of */
+  adminUpdateParticipant(participantId: string, data: { nrp: string; nama: string; departemen: string; angkatan: string }): Promise<void>
+  /** removes the participant with visits, notes, feedback and submission */
+  adminDeleteParticipant(participantId: string): Promise<void>
   /** returns the new staff PIN — shown once */
   adminResetStaffPin(boothId: string): Promise<string>
+  /** new shared staff PIN (all booths) — shown once */
+  adminResetStaffMasterPin(): Promise<string>
   adminUpsertBooth(b: Booth): Promise<void>
   adminUpsertSpeaker(s: Speaker): Promise<void>
   adminDeleteSpeaker(id: string): Promise<void>

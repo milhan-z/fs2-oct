@@ -24,6 +24,9 @@ const SESSION_ADMIN = 'fs2.session.admin'
 const sessionStaffKey = (slug: string) => `fs2.session.staff.${slug}`
 
 export const MOCK_STAFF_PINS: Record<string, string> = { B1: '1111', B2: '2222', B3: '3333', B4: '4444' }
+/** shared staff (runner) PIN in the mock — works for every booth */
+export const MOCK_STAFF_MASTER_PIN = '555555'
+const SESSION_STAFF_ROAM = 'fs2.session.staffAll'
 export const MOCK_ADMIN_PASSWORD = 'fs2admin'
 
 interface PRow {
@@ -78,6 +81,7 @@ interface DB {
   auth: Record<string, AuthRow>
   sessions: Record<string, SessionRow>
   staffPins: Record<string, string>
+  staffMaster?: string
   adminHash: string
   visits: VisitRow[]
   resumes: ResumeRow[]
@@ -123,6 +127,7 @@ function freshDb(): DB {
     auth: {},
     sessions: {},
     staffPins: Object.fromEntries(Object.entries(MOCK_STAFF_PINS).map(([k, v]) => [k, hash(v)])),
+    staffMaster: hash(MOCK_STAFF_MASTER_PIN),
     adminHash: hash(MOCK_ADMIN_PASSWORD),
     visits: [],
     resumes: [],
@@ -140,7 +145,7 @@ function load(): DB {
     const raw = localStorage.getItem(DB_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as DB
-      if (parsed.v === 2) return parsed
+      if (parsed.v === 2) return { ...parsed, staffMaster: parsed.staffMaster ?? hash(MOCK_STAFF_MASTER_PIN) }
     }
   } catch {
     /* ignore corrupt storage */
@@ -409,9 +414,18 @@ export const mockAdapter: Api = {
 
   async staffLogin(slug, pin) {
     await delay()
+    const master = !!db.staffMaster && db.staffMaster === hash(pin)
+    if (!slug) {
+      if (!master) throw new ApiError('bad_pin', 'Wrong staff PIN.')
+      localStorage.setItem(SESSION_STAFF_ROAM, newSession({ role: 'staff', subject: 'runner' }))
+      save()
+      return null
+    }
     const b = boothBySlug(slug)
-    if (db.staffPins[b.id] !== hash(pin)) throw new ApiError('bad_pin', 'Wrong booth PIN.')
-    localStorage.setItem(sessionStaffKey(slug), newSession({ role: 'staff', subject: `staff-${b.id}`, boothId: b.id }))
+    if (!master && db.staffPins[b.id] !== hash(pin)) throw new ApiError('bad_pin', 'Wrong staff PIN.')
+    const token = newSession({ role: 'staff', subject: master ? `runner:${b.id}` : `staff-${b.id}`, boothId: b.id })
+    localStorage.setItem(sessionStaffKey(slug), token)
+    if (master) localStorage.setItem(SESSION_STAFF_ROAM, token)
     save()
     return { boothId: b.id, boothNama: b.nama }
   },
@@ -423,8 +437,25 @@ export const mockAdapter: Api = {
     return b ? { boothId: b.id, boothNama: b.nama } : null
   },
 
-  staffLogout(slug) {
-    localStorage.removeItem(sessionStaffKey(slug))
+  staffCanSwitch() {
+    return !!readSession(SESSION_STAFF_ROAM, 'staff')
+  },
+
+  async staffSwitch(slug) {
+    await delay()
+    const s = readSession(SESSION_STAFF_ROAM, 'staff')
+    if (!s || !s.subject.startsWith('runner')) {
+      localStorage.removeItem(SESSION_STAFF_ROAM)
+      throw new ApiError('auth', 'Sign in with the staff PIN first.')
+    }
+    const b = boothBySlug(slug)
+    localStorage.setItem(sessionStaffKey(slug), newSession({ role: 'staff', subject: `runner:${b.id}`, boothId: b.id }))
+    save()
+    return { boothId: b.id, boothNama: b.nama }
+  },
+
+  staffLogout() {
+    for (const k of Object.keys(localStorage)) if (k.startsWith('fs2.session.staff')) localStorage.removeItem(k)
   },
 
   async staffResolveTokens(slug, tokens) {
@@ -628,6 +659,37 @@ export const mockAdapter: Api = {
     return pin
   },
 
+  async adminUpdateParticipant(pid, data) {
+    await delay()
+    requireAdmin()
+    const p = db.participants.find((x) => x.id === pid)
+    if (!p) throw new ApiError('not_found', 'Participant not found.')
+    const nrp = data.nrp.trim()
+    if (!/^\d{4,14}$/.test(nrp)) throw new ApiError('invalid', 'NRP must be 4–14 digits.')
+    if (data.nama.trim().length < 3) throw new ApiError('invalid', 'Fill in the full name.')
+    if (!data.departemen.trim()) throw new ApiError('invalid', 'Fill in the department.')
+    if (db.participants.some((x) => x.nrp === nrp && x.id !== pid)) throw new ApiError('exists', 'Another participant already uses this NRP.')
+    Object.assign(p, { nrp, nama: data.nama.trim(), departemen: data.departemen.trim(), angkatan: data.angkatan.trim() })
+    audit('admin', 'update_participant', pid)
+    save()
+  },
+
+  async adminDeleteParticipant(pid) {
+    await delay()
+    requireAdmin()
+    if (!db.participants.some((x) => x.id === pid)) throw new ApiError('not_found', 'Participant not found.')
+    db.participants = db.participants.filter((x) => x.id !== pid)
+    delete db.auth[pid]
+    delete db.stamp4it[pid]
+    db.visits = db.visits.filter((x) => x.participantId !== pid)
+    db.resumes = db.resumes.filter((x) => x.participantId !== pid)
+    db.answers = db.answers.filter((x) => x.participantId !== pid)
+    db.submissions = db.submissions.filter((x) => x.participantId !== pid)
+    for (const [k, s] of Object.entries(db.sessions)) if (s.role === 'participant' && s.subject === pid) delete db.sessions[k]
+    audit('admin', 'delete_participant', pid)
+    save()
+  },
+
   async adminResetStaffPin(boothId) {
     await delay()
     requireAdmin()
@@ -635,6 +697,17 @@ export const mockAdapter: Api = {
     db.staffPins[boothId] = hash(pin)
     for (const [k, s] of Object.entries(db.sessions)) if (s.role === 'staff' && s.boothId === boothId) delete db.sessions[k]
     audit('admin', 'reset_staff_pin', boothId)
+    save()
+    return pin
+  },
+
+  async adminResetStaffMasterPin() {
+    await delay()
+    requireAdmin()
+    const pin = String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0')
+    db.staffMaster = hash(pin)
+    for (const [k, s] of Object.entries(db.sessions)) if (s.role === 'staff' && s.subject.startsWith('runner')) delete db.sessions[k]
+    audit('admin', 'reset_staff_master_pin', '')
     save()
     return pin
   },

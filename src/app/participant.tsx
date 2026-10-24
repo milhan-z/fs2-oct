@@ -105,3 +105,16 @@ export function ParticipantProvider({ children }: { children: ReactNode }) {
 export function useParticipant() {
   return useContext(ParticipantCtx)
 }
+
+/** Signs the participant out of this phone and closes the passport. */
+export function useSignOut() {
+  const { setState } = useParticipant()
+  const nav = useNavigate()
+  return () => {
+    if (!confirm('Sign out of the passport on this phone? You can sign in again with your NRP and PIN.')) return
+    api.logout()
+    clearStateCache()
+    setState(null)
+    nav('/', { replace: true })
+  }
+}

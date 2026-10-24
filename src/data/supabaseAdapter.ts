@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Api } from './api'
 import { ApiError, type Content, type MyState, type ResolvedToken, type StaffHistoryItem, type StaffSession } from './types'
 import { DEPARTEMEN_ITS } from './seed'
@@ -13,6 +12,7 @@ import { toEnglish } from './messages'
 const SESSION_P = 'fs2.session.participant'
 const SESSION_ADMIN = 'fs2.session.admin'
 const staffKey = (slug: string) => `fs2.session.staff.${slug}`
+const STAFF_ROAM = 'fs2.session.staffAll'
 
 interface StoredStaff extends StaffSession {
   token: string
@@ -32,25 +32,34 @@ export function supabaseAdapter(): Api {
   const url = import.meta.env.VITE_SUPABASE_URL
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY
   if (!url || !key) throw new Error('VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are not set.')
-  // supabase-js loads on the first call, so it stays out of the first-paint bundle
-  let sbPromise: Promise<SupabaseClient> | null = null
-  const client = () => (sbPromise ??= import('@supabase/supabase-js').then((m) => m.createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })))
+  // Plain fetch against PostgREST / Edge Functions / Storage: no client library to download before
+  // the first call, so the first request leaves as soon as the app boots.
+  const headers = { apikey: key, Authorization: `Bearer ${key}` }
 
-  async function rpc<T>(fn: string, params: Record<string, unknown> = {}): Promise<T> {
-    let res
+  async function post(path: string, body: unknown): Promise<Response> {
     try {
-      res = await (await client()).rpc(fn, params)
+      return await fetch(`${url}${path}`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     } catch {
       throw new ApiError('network', 'No connection. Try again in a moment.')
     }
-    if (res.error) {
-      const m = res.error.message ?? ''
+  }
+
+  async function rpc<T>(fn: string, params: Record<string, unknown> = {}): Promise<T> {
+    const res = await post(`/rest/v1/rpc/${fn}`, params)
+    const text = await res.text()
+    const data = text ? JSON.parse(text) : null
+    if (!res.ok) {
+      const m: string = data?.message ?? ''
       const i = m.indexOf(':')
-      if (res.error.code === 'P0001' && i > 0) throw new ApiError(m.slice(0, i), toEnglish(m.slice(i + 1)))
-      if (!res.error.code) throw new ApiError('network', 'No connection. Try again in a moment.')
+      if (data?.code === 'P0001' && i > 0) throw new ApiError(m.slice(0, i), toEnglish(m.slice(i + 1)))
       throw new ApiError('server', 'Server error. Please try again.')
     }
-    return res.data as T
+    return data as T
+  }
+
+  async function invoke<T>(fn: string, body: unknown): Promise<T | null> {
+    const res = await post(`/functions/v1/${fn}`, body)
+    return res.ok ? ((await res.json()) as T) : null
   }
 
   /** login-style RPCs answer {ok, token | error, message} instead of raising */
@@ -67,15 +76,32 @@ export function supabaseAdapter(): Api {
     return s.token
   }
 
-  // --- attendance photos: private bucket, short-lived signed URLs (cached) ---
-  const photoCache = new Map<string, { url: string; exp: number }>()
+  // --- attendance photos: private bucket, short-lived signed URLs (cached across reloads) ---
+  const PHOTO_CACHE = 'fs2.cache.photoUrls'
+  const photoCache = new Map<string, { url: string; exp: number }>(
+    (() => {
+      try {
+        return Object.entries(JSON.parse(localStorage.getItem(PHOTO_CACHE) ?? '{}') as Record<string, { url: string; exp: number }>).filter(([, v]) => v.exp > Date.now())
+      } catch {
+        return []
+      }
+    })(),
+  )
+  const persistPhotos = () => {
+    try {
+      localStorage.setItem(PHOTO_CACHE, JSON.stringify(Object.fromEntries([...photoCache].filter(([, v]) => v.exp > Date.now()).slice(-300))))
+    } catch {
+      /* storage full — the in-memory cache still works */
+    }
+  }
   async function photoUrls(token: string, paths: (string | null | undefined)[]): Promise<Map<string, string>> {
     const want = [...new Set(paths.filter((p): p is string => !!p))]
     const now = Date.now()
     const missing = want.filter((p) => (photoCache.get(p)?.exp ?? 0) < now)
     if (missing.length) {
-      const { data } = await (await client()).functions.invoke<{ urls: Record<string, string> }>('photo-view-url', { body: { token, paths: missing } })
+      const data = await invoke<{ urls: Record<string, string> }>('photo-view-url', { token, paths: missing })
       for (const [p, u] of Object.entries(data?.urls ?? {})) photoCache.set(p, { url: u, exp: now + 25 * 60_000 })
+      persistPhotos()
     }
     return new Map(want.flatMap((p) => (photoCache.has(p) ? [[p, photoCache.get(p)!.url] as const] : [])))
   }
@@ -85,10 +111,15 @@ export function supabaseAdapter(): Api {
   }
 
   async function signedUpload(body: Record<string, unknown>, bucket: string, file: Blob, contentType: string) {
-    const { data, error } = await (await client()).functions.invoke<{ path: string; uploadToken: string; publicUrl?: string; error?: string; message?: string }>('photo-upload-url', { body })
-    if (error || !data?.path) throw new ApiError('upload', 'Could not prepare the upload. Please try again.')
-    const up = await (await client()).storage.from(bucket).uploadToSignedUrl(data.path, data.uploadToken, file, { contentType })
-    if (up.error) throw new ApiError('upload', 'Photo upload failed. Please try again.')
+    const data = await invoke<{ path: string; uploadToken: string; publicUrl?: string; error?: string; message?: string }>('photo-upload-url', body)
+    if (!data?.path) throw new ApiError('upload', 'Could not prepare the upload. Please try again.')
+    // same request supabase-js storage.uploadToSignedUrl() makes
+    const form = new FormData()
+    form.append('cacheControl', '3600')
+    form.append('', new Blob([file], { type: contentType }))
+    const target = `${url}/storage/v1/object/upload/sign/${bucket}/${data.path.split('/').map(encodeURIComponent).join('/')}?token=${encodeURIComponent(data.uploadToken)}`
+    const up = await fetch(target, { method: 'PUT', headers: { ...headers, 'x-upsert': 'false' }, body: form }).catch(() => null)
+    if (!up?.ok) throw new ApiError('upload', 'Photo upload failed. Please try again.')
     return data
   }
 
@@ -162,7 +193,9 @@ export function supabaseAdapter(): Api {
 
     // --- staff ---------------------------------------------------------------
     async staffLogin(slug, pin) {
-      const r = unwrap(await rpc<{ ok: boolean; token: string; boothId: string; boothNama: string }>('staff_login', { p_slug: slug, p_pin: pin }))
+      const r = unwrap(await rpc<{ ok: boolean; roaming: boolean; token: string; boothId?: string; boothNama?: string }>('staff_login', { p_slug: slug, p_pin: pin }))
+      if (r.roaming) localStorage.setItem(STAFF_ROAM, r.token)
+      if (!r.boothId || !r.boothNama) return null
       const s: StoredStaff = { token: r.token, boothId: r.boothId, boothNama: r.boothNama }
       localStorage.setItem(staffKey(slug), JSON.stringify(s))
       return { boothId: s.boothId, boothNama: s.boothNama }
@@ -173,7 +206,24 @@ export function supabaseAdapter(): Api {
       return s ? { boothId: s.boothId, boothNama: s.boothNama } : null
     },
 
-    staffLogout: (slug) => localStorage.removeItem(staffKey(slug)),
+    staffCanSwitch: () => !!localStorage.getItem(STAFF_ROAM),
+
+    async staffSwitch(slug) {
+      const roam = localStorage.getItem(STAFF_ROAM)
+      if (!roam) throw new ApiError('auth', 'Sign in with the staff PIN first.')
+      try {
+        const r = await rpc<{ token: string; boothId: string; boothNama: string }>('staff_switch', { p_token: roam, p_slug: slug })
+        localStorage.setItem(staffKey(slug), JSON.stringify({ token: r.token, boothId: r.boothId, boothNama: r.boothNama } satisfies StoredStaff))
+        return { boothId: r.boothId, boothNama: r.boothNama }
+      } catch (e) {
+        if ((e as ApiError).code === 'auth') localStorage.removeItem(STAFF_ROAM)
+        throw e
+      }
+    },
+
+    staffLogout: () => {
+      for (const k of Object.keys(localStorage)) if (k.startsWith('fs2.session.staff')) localStorage.removeItem(k)
+    },
 
     async staffResolveTokens(slug, tokens) {
       const t = sToken(slug)
@@ -227,7 +277,10 @@ export function supabaseAdapter(): Api {
       changed()
     },
     adminListParticipants: (q) => rpc('admin_list_participants', { p_token: aToken(), p_q: q.trim() }),
+    adminResetStaffMasterPin: () => rpc<string>('admin_reset_staff_master_pin', { p_token: aToken() }),
     adminResetPin: (pid) => rpc<string>('admin_reset_pin', { p_token: aToken(), p_pid: pid }),
+    adminUpdateParticipant: (pid, data) => rpc<void>('admin_update_participant', { p_token: aToken(), p_pid: pid, p_data: data }),
+    adminDeleteParticipant: (pid) => rpc<void>('admin_delete_participant', { p_token: aToken(), p_pid: pid }),
     adminResetStaffPin: (boothId) => rpc<string>('admin_reset_staff_pin', { p_token: aToken(), p_booth: boothId }),
     adminUpsertBooth: (b) => rpc('admin_upsert_booth', { p_token: aToken(), p_booth: b }),
     adminUpsertSpeaker: (s) => rpc('admin_upsert_speaker', { p_token: aToken(), p_speaker: s }),
