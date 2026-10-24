@@ -95,6 +95,7 @@ if (page.url().includes('onboarding')) {
   await page.getByRole('button', { name: 'Start' }).click({ timeout: 8000 }).catch(() => {})
 }
 await page.waitForURL('**/map')
+await page.getByRole('button', { name: 'Skip tour' }).click({ timeout: 5000 }).catch(() => {})
 // real photos for the Korea (Rahmat Agussalim) and Taiwan (Tegar Anugrah Firdaus) speakers, names as in the seed;
 // only this browser copy of the mock data changes, never the app seed
 await page.evaluate((photos) => {
@@ -173,10 +174,12 @@ await rect('answerSubmit', page.getByRole('button', { name: /Answer & submit/ })
 await page.getByRole('button', { name: /Answer & submit/ }).click()
 await wait(1500)
 await shot('s13-exit')
-await page.getByRole('radio').nth(4).click()
-await wait(650)
-await page.getByRole('radio').nth(3).click()
-await wait(650)
+for (let k = 0; k < 4; k++) {
+  await page.getByRole('radio').nth(4).click()
+  await wait(600)
+}
+await page.getByLabel('Criticism and Suggestions for Material').fill('-')
+await wait(500)
 await shot('s14-exit-text')
 await page.getByRole('button', { name: 'Submit', exact: true }).click().catch(() => {})
 await page.waitForURL('**/status', { timeout: 10000 }).catch(() => {})

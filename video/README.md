@@ -34,3 +34,11 @@ FFMPEG=/path/to/ffmpeg node video/render.mjs video v out.mp4 mix.wav     # or `h
 Voice files are trimmed with `silenceremove` (start and end) and converted to mono 44.1 kHz WAV before `audio.py`; loudness is normalised to −14 LUFS with `loudnorm`.
 
 Changing the script? Update `LINES` in `gen_vo.py`, the start times in `cues.json`, and the `SCREENS` / `STEPS` / `TAPS` timings in `index.html`.
+
+## Committee guide (`video/committee/`)
+A longer film for the ID Volunteer S16 committee: booth staff scanning (sign-in, scanning, queue colours, manual entry, confirm, undo, session hours) followed by the admin console. English voice-over (`en-US-ChristopherNeural`), 1920×1080, about 1:45.
+- `capture.mjs` – drives the app in mock mode with a fake camera (`camera_frames.py` builds a looping desk-with-QR video) and saves real screens + element rects to `shots/`. Run against a production build (`npm run build && npx vite preview --port 4173`): the dev server's React StrictMode starts the scanner twice and the camera never attaches.
+- `voice.json` → `python video/gen_vo.py <dir> <ffmpeg> video/committee/voice.json` – phrase-by-phrase directed voice-over.
+- `build_cues.py <dir>` – lays the lines on the timeline (`cues.json`); `audio.py <dir> <out.wav>` – score, UI sounds, voice, ducking.
+- `index.html` – the film; render with `HTML=video/committee/index.html CUES=video/committee/cues.json RECTS=video/committee/shots/rects.json node video/render.mjs video h out.mp4 mix.wav`.
+- Extra participant names in the demo are fictional. Personal photos live in `video/private/` (gitignored).

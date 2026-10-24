@@ -1,0 +1,102 @@
+{
+  "voice": "en-US-ChristopherNeural",
+  "lines": {
+    "intro": [
+      ["Team S16.", "-10%", "-8Hz", "+8%", 0.38],
+      ["Here is everything you need, on the day.", "-4%", "-4Hz", "+0%", 0]
+    ],
+    "staff": [
+      ["First, the booth staff.", "-4%", "-2Hz", "+5%", 0.3],
+      ["Open the staff page,", "+2%", "+0Hz", "+0%", 0.12],
+      ["and enter the staff PIN.", "+2%", "+1Hz", "+0%", 0]
+    ],
+    "booths": [
+      ["Pick your booth.", "+0%", "+1Hz", "+5%", 0.3],
+      ["You can switch booths at any time,", "+2%", "+0Hz", "+0%", 0.12],
+      ["without signing in again.", "+2%", "+0Hz", "+0%", 0]
+    ],
+    "scan": [
+      ["Ask the participant to open their QR permit.", "+2%", "+1Hz", "+0%", 0.3],
+      ["Point the camera at it.", "+0%", "+2Hz", "+5%", 0]
+    ],
+    "queue": [
+      ["Their name and photo join the queue.", "+2%", "+1Hz", "+0%", 0.3],
+      ["Match the face,", "+0%", "+1Hz", "+5%", 0.12],
+      ["and keep scanning.", "+2%", "+0Hz", "+0%", 0]
+    ],
+    "states": [
+      ["Green means ready.", "+0%", "+2Hz", "+8%", 0.28],
+      ["Yellow means already stamped here.", "+0%", "+1Hz", "+5%", 0.28],
+      ["Red means it is not an F S squared passport.", "-2%", "-1Hz", "+5%", 0]
+    ],
+    "manual": [
+      ["No QR?", "-6%", "+0Hz", "+8%", 0.3],
+      ["Type the last four digits of the N R P.", "+2%", "+1Hz", "+0%", 0]
+    ],
+    "confirm": [
+      ["Then tap", "+2%", "+0Hz", "+0%", 0.06],
+      ["Confirm all.", "-4%", "+3Hz", "+15%", 0.34],
+      ["The stamp lands on the participant's phone,", "+2%", "+1Hz", "+0%", 0.12],
+      ["within seconds.", "-2%", "+2Hz", "+8%", 0]
+    ],
+    "history": [
+      ["Stamped by mistake?", "-2%", "+0Hz", "+8%", 0.3],
+      ["Open History,", "+2%", "+1Hz", "+0%", 0.1],
+      ["and tap Undo.", "+0%", "+2Hz", "+8%", 0]
+    ],
+    "closed": [
+      ["Scanning only works during session hours,", "+0%", "+0Hz", "+0%", 0.2],
+      ["unless simulation mode is on.", "+0%", "+0Hz", "+0%", 0]
+    ],
+    "admin": [
+      ["Now,", "-6%", "-4Hz", "+5%", 0.28],
+      ["the admin console.", "-4%", "-5Hz", "+8%", 0]
+    ],
+    "login": [
+      ["Sign in with the admin password.", "+2%", "+1Hz", "+0%", 0]
+    ],
+    "overview": [
+      ["Overview shows registrations, photos,", "+2%", "+1Hz", "+0%", 0.15],
+      ["and stamps for every booth,", "+2%", "+0Hz", "+0%", 0.12],
+      ["live.", "-6%", "+2Hz", "+10%", 0]
+    ],
+    "review": [
+      ["In Submissions, open a passport.", "+2%", "+1Hz", "+0%", 0.3],
+      ["Check the photo, and the notes.", "+2%", "+0Hz", "+0%", 0]
+    ],
+    "approve": [
+      ["Approve it,", "+0%", "+2Hz", "+8%", 0.2],
+      ["or return it with a note.", "+2%", "+0Hz", "+0%", 0.3],
+      ["Approved passports can collect their Stamp4It.", "+2%", "+1Hz", "+0%", 0]
+    ],
+    "people": [
+      ["In Participants, search,", "+2%", "+1Hz", "+0%", 0.12],
+      ["fix a name or N R P,", "+2%", "+0Hz", "+0%", 0.12],
+      ["reset a PIN,", "+2%", "+0Hz", "+0%", 0.12],
+      ["or delete a test entry.", "+0%", "+1Hz", "+5%", 0]
+    ],
+    "content": [
+      ["In Booths and content,", "+2%", "+1Hz", "+0%", 0.2],
+      ["move map points, edit speakers,", "+2%", "+0Hz", "+0%", 0.12],
+      ["and set the staff PIN.", "+0%", "+1Hz", "+5%", 0]
+    ],
+    "questions": [
+      ["Feedback questions live here too.", "+2%", "+0Hz", "+0%", 0.3],
+      ["Add as many as you need,", "+2%", "+1Hz", "+0%", 0.12],
+      ["and put them in order.", "+0%", "+1Hz", "+5%", 0]
+    ],
+    "settings": [
+      ["Settings holds simulation mode,", "+2%", "+1Hz", "+0%", 0.12],
+      ["session hours,", "+2%", "+0Hz", "+0%", 0.12],
+      ["and the submission deadline.", "+0%", "+0Hz", "+0%", 0]
+    ],
+    "export": [
+      ["When it is over,", "+0%", "+0Hz", "+0%", 0.2],
+      ["export everything to Excel.", "+0%", "+2Hz", "+8%", 0]
+    ],
+    "outro": [
+      ["That's it, team S16.", "-8%", "-4Hz", "+8%", 0.45],
+      ["Good luck on the day.", "-10%", "-6Hz", "+8%", 0]
+    ]
+  }
+}

@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>FS² committee guide — motion</title>
+<style>
+  @font-face { font-family: 'Baskerville'; font-weight: 700; src: url(../assets/fonts/libre-baskerville-latin-700-normal.woff2); }
+  @font-face { font-family: 'Poppins'; font-weight: 600; src: url(../assets/fonts/poppins-latin-600-normal.woff2); }
+  @font-face { font-family: 'Poppins'; font-weight: 700; src: url(../assets/fonts/poppins-latin-700-normal.woff2); }
+  @font-face { font-family: 'Anton'; src: url(../assets/fonts/anton-latin-400-normal.woff2); }
+  @font-face { font-family: 'Courier Prime'; font-weight: 700; src: url(../assets/fonts/courier-prime-latin-700-normal.woff2); }
+  :root { --red: #e0302a; --night: #0d0608; --cream: #f3ebdd; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #000; overflow: hidden; }
+  #stage { position: absolute; left: 0; top: 0; overflow: hidden; background: var(--night); color: var(--cream); font-family: 'Poppins', sans-serif; }
+  .abs { position: absolute; }
+  #stage img { display: block; user-select: none; }
+  .dev { position: absolute; will-change: transform; }
+  .bezel { position: absolute; inset: 0; background: linear-gradient(145deg, #3a3236, #0c0809 40%, #241b1f); box-shadow: 0 0 0 2px #50464b inset, 0 40px 90px rgba(0,0,0,.7), 0 0 120px rgba(224,48,42,.26); }
+  .screen { position: absolute; overflow: hidden; background: #0e1015; }
+  .layer { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .glass { position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,255,255,.08), rgba(255,255,255,0) 32%); mix-blend-mode: screen; pointer-events: none; }
+  .island { position: absolute; background: #050303; border-radius: 99px; z-index: 5; }
+  .browser { position: absolute; border-radius: 14px; background: #1b1d24; box-shadow: 0 40px 100px rgba(0,0,0,.7), 0 0 0 1.5px #3a3f4c inset, 0 0 120px rgba(224,48,42,.22); overflow: hidden; }
+  .bar { position: absolute; left: 0; right: 0; top: 0; height: 38px; background: #262932; display: flex; align-items: center; gap: 8px; padding: 0 14px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .url { margin-left: 18px; flex: 0 0 auto; width: 520px; height: 24px; border-radius: 12px; background: #15171d; color: #aeb3c0; font: 600 14px 'Poppins'; display: flex; align-items: center; padding: 0 14px; }
+  .badge { font-family: 'Anton', sans-serif; color: var(--red); text-shadow: 0 0 18px rgba(224,48,42,.9), 0 0 48px rgba(224,48,42,.55); line-height: 1; }
+  .cap-title { font-family: 'Baskerville', serif; font-weight: 700; line-height: 1.1; color: var(--cream); text-shadow: 0 2px 24px rgba(0,0,0,.8); }
+  .cap-sub { font-weight: 600; color: rgba(243,235,221,.84); text-shadow: 0 2px 14px rgba(0,0,0,.9); }
+  .part { font-weight: 700; letter-spacing: .34em; text-transform: uppercase; color: #ffb3aa; text-shadow: 0 0 14px rgba(224,48,42,.6); }
+  .neon { font-family: 'Baskerville', serif; font-weight: 700; color: #ffd9d3; text-shadow: 0 0 10px #ff5a4d, 0 0 28px #e0302a, 0 0 70px #e0302a, 0 0 140px rgba(224,48,42,.7); }
+  .rrect { position: absolute; border: 3px solid #ffd9d3; border-radius: 10px; box-shadow: 0 0 14px #ff5a4d, 0 0 34px rgba(224,48,42,.8); pointer-events: none; }
+  .rrect.g { border-color: #b8ffcb; box-shadow: 0 0 14px #3dff7d, 0 0 34px rgba(61,255,125,.6); }
+  .rrect.y { border-color: #ffe9a8; box-shadow: 0 0 14px #ffc83d, 0 0 34px rgba(255,200,61,.6); }
+  .ring { position: absolute; border-radius: 50%; border: 3px solid #ffd9d3; box-shadow: 0 0 14px #ff5a4d, 0 0 30px rgba(224,48,42,.8); pointer-events: none; }
+  .touch { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: rgba(255,255,255,.35); border: 2px solid rgba(255,255,255,.8); pointer-events: none; }
+  .pill { background: #fff; border-radius: 999px; padding: 12px 30px; box-shadow: 0 6px 30px rgba(0,0,0,.5); }
+  #grain { position: absolute; inset: -100px; mix-blend-mode: overlay; opacity: .28; pointer-events: none; }
+  #vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 50%, rgba(0,0,0,.7) 100%); }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="cues.js"></script>
+<script>
+// FS² committee guide. Every frame is a pure function of time (window.seek); seeded randomness only.
+const W = 1920, H = 1080
+window.DURATION = CUES.duration
+window.FPS = CUES.fps
+
+const clamp01 = (v) => Math.max(0, Math.min(1, v))
+const lerp = (a, b, k) => a + (b - a) * k
+function bezier(x1, y1, x2, y2) {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by
+  const sx = (u) => ((ax * u + bx) * u + cx) * u, sy = (u) => ((ay * u + by) * u + cy) * u, dx = (u) => (3 * ax * u + 2 * bx) * u + cx
+  return (x) => {
+    if (x <= 0) return 0
+    if (x >= 1) return 1
+    let u = x
+    for (let i = 0; i < 8; i++) { const e = sx(u) - x; if (Math.abs(e) < 1e-6) return sy(u); const d = dx(u); if (Math.abs(d) < 1e-6) break; u -= e / d }
+    let lo = 0, hi = 1; u = x
+    while (hi - lo > 1e-6) { if (sx(u) < x) lo = u; else hi = u; u = (lo + hi) / 2 }
+    return sy(u)
+  }
+}
+const OUT = bezier(0.05, 0.7, 0.1, 1), IN = bezier(0.3, 0, 0.8, 0.15), STD = bezier(0.2, 0, 0, 1)
+const prog = (t, t0, dur, ease = STD) => ease(clamp01((t - t0) / dur))
+function spring(t, { duration = 0.5, bounce = 0 } = {}) {
+  if (t <= 0) return 0
+  const w = (2 * Math.PI) / duration, z = bounce >= 0 ? 1 - bounce : 1 / (1 + bounce)
+  if (z < 1) { const wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + ((z * w) / wd) * Math.sin(wd * t)) }
+  return 1 - Math.exp(-w * t) * (1 + w * t)
+}
+function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) } return h >>> 0 }
+function rnd(seed) { let a = typeof seed === 'string' ? hash(seed) : seed >>> 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 }
+
+// ---- timeline helpers --------------------------------------------------------------------------
+const V = Object.fromEntries(CUES.voice.map((v) => [v.key, v]))
+const HIT = CUES.hits
+const at = (k, i = 0, d = 0) => V[k].t + V[k].off[i] + d
+const endOf = (k, d = 0) => V[k].t + V[k].dur + d
+const R = SHOTS_RECTS
+
+const T_PHONE_IN = V.staff.t - 0.7
+const T_PHONE_OUT = V.admin.t - 0.9
+const T_BROWSER_IN = V.admin.t - 0.7
+const T_BROWSER_OUT = endOf('export', 0.5)
+const T_OUTRO = HIT.outro
+
+// phone shots (staff, 390×844) and the participant phone
+const STAFF = [
+  ['st01-pin', V.staff.t - 0.3],
+  ['st02-booths', V.booths.t - 0.15],
+  ['st03-scanner', at('booths', 1, -0.1)],
+  ['st04-scanned', at('scan', 1, 0.3)],
+  ['st05-queue', at('queue', 1, -0.2)],
+  ['st07-states', V.states.t - 0.15],
+  ['st08-manual', V.manual.t - 0.15],
+  ['st05-queue', V.confirm.t - 0.2],
+  ['st06-confirmed', HIT.tapConfirm + 0.12],
+  ['st09-history', V.history.t - 0.15],
+  ['st10-closed', V.closed.t - 0.15],
+]
+const PART = [['pt01-stamp', HIT.tapConfirm + 0.3]]
+const ADMIN = [
+  ['ad01-login', V.admin.t - 0.2, 'admin'],
+  ['ad02-overview', V.overview.t - 0.15, 'admin'],
+  ['ad03-submissions', V.review.t - 0.15, 'admin/submissions'],
+  ['ad04-detail', at('review', 1, -0.5), 'admin/submissions'],
+  ['ad05-approved', at('approve', 2, -0.25), 'admin/submissions'],
+  ['ad06-participants', V.people.t - 0.15, 'admin/participants'],
+  ['ad07-content-map', V.content.t - 0.15, 'admin/content'],
+  ['ad08-content-staffpin', at('content', 2, -0.3), 'admin/content'],
+  ['ad09-content-questions', V.questions.t - 0.15, 'admin/content'],
+  ['ad10-settings', V.settings.t - 0.15, 'admin/settings'],
+  ['ad11-export', V.export.t - 0.15, 'admin/export'],
+]
+
+const mid = (r) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 })
+// highlights: [shot, t0, t1, rect, pad, kind]
+const HL = [
+  ['st01-pin', V.staff.t + 1.5, HIT.tapConfirm, R['st01-signin'], 4, ''],
+  ['st02-booths', V.booths.t + 0.1, at('booths', 1, -0.3), R['st02-korea'], 4, ''],
+  ['st03-scanner', at('booths', 1), endOf('booths'), R['st03-switch'], 6, ''],
+  ['st03-scanner', at('scan', 0, 0.2), at('scan', 1, 0.3), R['st03-camera'], 4, ''],
+  ['st04-scanned', at('scan', 1, 0.3), endOf('scan', 0.2), R['st03-camera'], 4, 'g'],
+  ['st04-scanned', at('queue', 0, 0.1), at('queue', 1, -0.2), R['st04-item'], 0, ''],
+  ['st05-queue', at('queue', 1, -0.2), endOf('queue'), R['st05-first'], 3, 'g'],
+  ['st07-states', at('states', 0, 0.1), at('states', 1), R['st05-second'], 0, ''],
+  ['st07-states', at('states', 1), at('states', 2), R['st07-dup'], 3, 'y'],
+  ['st07-states', at('states', 2), endOf('states'), R['st07-unknown'], 3, ''],
+  ['st08-manual', at('manual', 1), endOf('manual'), R['st08-input'], 4, ''],
+  ['st05-queue', V.confirm.t, HIT.tapConfirm + 0.1, R['st05-confirm'], 4, 'g'],
+  ['st09-history', at('history', 1), endOf('history'), R['st09-undo'], 5, ''],
+  ['st10-closed', V.closed.t + 0.1, endOf('closed'), R['st10-banner'], 4, 'y'],
+  ['ad01-login', V.login.t + 0.3, V.login.t + 1.8, R['ad01-signin'], 4, ''],
+  ['ad02-overview', V.overview.t + 0.1, at('overview', 1), R['ad02-stats'], 6, ''],
+  ['ad02-overview', at('overview', 1), endOf('overview'), R['ad02-scans'], 6, ''],
+  ['ad03-submissions', V.review.t + 0.8, at('review', 1, -0.4), R['ad03-first'], 4, ''],
+  ['ad04-detail', V.approve.t, at('approve', 1, 0.1), R['ad04-approve'], 5, 'g'],
+  ['ad04-detail', at('approve', 1, 0.1), at('approve', 2, -0.3), R['ad04-return'], 5, 'y'],
+  ['ad05-approved', at('approve', 2, -0.2), endOf('approve', 0.3), R['ad05-stamp4it'], 8, ''],
+  ['ad06-participants', at('people', 0, 0.3), at('people', 1), R['ad06-edit'], 5, ''],
+  ['ad06-participants', at('people', 2), at('people', 3), R['ad06-reset'], 5, ''],
+  ['ad06-participants', at('people', 3), endOf('people'), R['ad06-delete'], 5, 'y'],
+  ['ad08-content-staffpin', at('content', 2, -0.2), endOf('content'), R['ad08-staffpin'], 6, ''],
+  ['ad09-content-questions', V.questions.t + 0.1, endOf('questions'), R['ad09-questions'], 6, ''],
+  ['ad10-settings', V.settings.t + 0.1, at('settings', 1), R['ad10-sim'], 6, ''],
+  ['ad10-settings', at('settings', 1), endOf('settings'), R['ad10-hours'], 6, ''],
+  ['ad11-export', at('export', 1), endOf('export'), R['ad11-xlsx'], 6, ''],
+]
+const TAPS = [
+  ['st01-pin', V.staff.t + 3.1, mid(R['st01-signin'])],
+  ['st02-booths', at('booths', 1, -0.35), mid(R['st02-korea'])],
+  ['st05-queue', HIT.tapConfirm, mid(R['st05-confirm'])],
+  ['ad01-login', V.login.t + 1.35, mid(R['ad01-signin'])],
+  ['ad03-submissions', V.review.t + 1.9, mid(R['ad03-first'])],
+  ['ad04-detail', at('approve', 2, -0.7), mid(R['ad04-approve'])],
+]
+// zoom (screen coords): [shot, t0, t1, x, y, scale]
+const FOCUS = [
+  ['ad04-detail', V.approve.t, at('approve', 2, -0.3), 1340, 762, 1.25],
+  ['ad05-approved', at('approve', 2, -0.2), endOf('approve', 0.3), 1063, 762, 1.35],
+  ['ad06-participants', V.people.t + 0.1, endOf('people', 0.3), 1275, 534, 1.28],
+  ['ad09-content-questions', V.questions.t + 0.2, endOf('questions', 0.3), 1060, 700, 1.12],
+  ['ad11-export', at('export', 1, -0.2), endOf('export', 0.3), 440, 194, 1.45],
+]
+
+// ---- layout ------------------------------------------------------------------------------------
+const S = 1.02
+const SCR = { w: 390, h: 844 }
+const BZ = 13
+const scrW = SCR.w * S, scrH = SCR.h * S
+const PW = scrW + BZ * 2, PHH = scrH + BZ * 2
+const PHONE_CY = 560
+const CX_SINGLE = 1330, CX_L = 1090, CX_R = 1560
+
+const BW = 1480
+const BSC = BW / 1440
+const BH = 810 * BSC + 38
+const BCX = W / 2, BTOP = 178
+
+const stage = document.getElementById('stage')
+stage.style.width = W + 'px'; stage.style.height = H + 'px'
+const el = (cls, parent = stage, style = '') => { const d = document.createElement('div'); d.className = cls; if (style) d.style.cssText = style; parent.appendChild(d); return d }
+
+// ---- backdrop ----------------------------------------------------------------------------------
+el('abs', stage, 'inset:0;background:radial-gradient(ellipse at 50% 100%, #3a0f10 0%, #1a090b 45%, #0d0608 100%)')
+const redGlow = el('abs', stage, 'left:-20%;right:-20%;bottom:-10%;height:55%;background:radial-gradient(ellipse at 50% 100%, rgba(224,48,42,.5), rgba(224,48,42,.1) 55%, transparent 72%)')
+const clouds = el('abs', stage, 'left:0;right:0;top:4%;opacity:.09'); clouds.innerHTML = '<img src="../assets/clouds.svg" style="width:100%">'
+const smoke1 = el('abs', stage, 'left:-8%;bottom:0;width:38%;opacity:.13;mix-blend-mode:screen'); smoke1.innerHTML = '<img src="../assets/smoke1.svg" style="width:100%">'
+const smoke2 = el('abs', stage, 'right:-10%;bottom:0;width:42%;opacity:.11;mix-blend-mode:screen'); smoke2.innerHTML = '<img src="../assets/smoke2.svg" style="width:100%">'
+const skyline = el('abs', stage, 'left:0;right:0;bottom:40px;opacity:.14;filter:brightness(.4)'); skyline.innerHTML = '<img src="../assets/skyline.svg" style="width:100%">'
+const forest = el('abs', stage, 'left:0;right:0;bottom:0;height:400px;pointer-events:none')
+for (let i = 0; i < 14; i++) {
+  const h = 300 + rnd('pine-h' + i) * 220
+  const d = el('abs', forest, `bottom:-10px;left:${(i / 13) * 106 - 3}%;height:${h}px;transform:translateX(-50%);opacity:${0.55 + rnd('pine-o' + i) * 0.4}`)
+  d.innerHTML = '<img src="../assets/pine.webp" style="height:100%;width:auto;filter:brightness(.16) saturate(.5)">'
+}
+el('abs', forest, 'inset:auto 0 0 0;height:210px;background:linear-gradient(to top,#0b0506 12%,rgba(11,5,6,.75) 55%,transparent)')
+const sporeEls = Array.from({ length: 46 }, () => el('abs', stage, 'width:5px;height:5px;border-radius:50%;background:#f3ebdd;box-shadow:0 0 8px rgba(255,220,200,.9)'))
+const flowerDefs = [{ x: -40, y: 760, s: 230, r: -18 }, { x: 1740, y: 700, s: 210, r: 24 }, { x: 60, y: 130, s: 100, r: -30 }, { x: 1850, y: 90, s: 110, r: 14 }, { x: 860, y: 930, s: 120, r: -8 }, { x: 420, y: 960, s: 90, r: 30 }]
+const flowers = flowerDefs.map((f, i) => { const d = el('abs', stage, `left:${f.x}px;top:${f.y}px;width:${f.s}px;height:${f.s}px;opacity:.85`); d.innerHTML = '<img src="../assets/flower.svg" style="width:100%;height:100%">'; d._f = f; d._i = i; return d })
+
+// garland
+const BULBS = ['#E53935', '#F6C343', '#43A047', '#3B5BDB', '#3A9AAE', '#EC6FA5']
+const gar = el('abs', stage, 'left:0;top:14px;width:1920px;height:150px;pointer-events:none')
+const wireY = (x) => 22 + 18 * Math.sin((x / W) * Math.PI * 3.2 + 0.4)
+let gsvg = `<svg width="${W}" height="150" style="overflow:visible"><path d="M-40 ${wireY(-40)}`
+for (let x = -40; x <= W + 40; x += 12) gsvg += ` L${x} ${wireY(x).toFixed(1)}`
+gsvg += '" fill="none" stroke="#2a1d1f" stroke-width="4"/>'
+const NB = 15
+const bulbXs = Array.from({ length: NB }, (_, i) => ((i + 0.5) / NB) * W)
+bulbXs.forEach((x, i) => {
+  const y = wireY(x) + 6, c = BULBS[i % BULBS.length]
+  gsvg += `<g><rect x="${x - 5}" y="${y - 2}" width="10" height="11" rx="2" fill="#3b3133"/><circle id="bg${i}" cx="${x}" cy="${y + 32}" r="46" fill="${c}" opacity="0"/><ellipse id="bb${i}" cx="${x}" cy="${y + 28}" rx="11" ry="18" fill="${c}" opacity=".12"/><ellipse id="bh${i}" cx="${x - 3.5}" cy="${y + 22}" rx="3" ry="6" fill="#fff6e8" opacity="0"/></g>`
+})
+gar.innerHTML = gsvg + '</svg>'
+const bulbRefs = bulbXs.map((x, i) => ({ g: gar.querySelector('#bg' + i), b: gar.querySelector('#bb' + i), h: gar.querySelector('#bh' + i) }))
+
+// ---- title / outro cards -----------------------------------------------------------------------
+const intro = el('abs', stage, `left:0;width:${W}px;top:130px;text-align:center`)
+intro.innerHTML = `<div id="i-logo" class="pill" style="display:inline-block"><img src="../assets/logo-partners.webp" style="width:660px"></div>
+  <div id="i-kick" class="part" style="font-size:30px;margin-top:70px">Committee guide</div>
+  <div id="i-fs" class="neon" style="font-size:290px;line-height:1.05;margin-top:6px;white-space:nowrap"><span id="i-f">F</span><span id="i-s">S</span><span id="i-2" style="font-size:.55em;vertical-align:top;position:relative;top:.12em">2</span></div>
+  <div id="i-sub" class="cap-sub" style="font-size:42px;letter-spacing:.28em;text-transform:uppercase;margin-top:6px">ID Volunteer · S16</div>`
+const iLogo = intro.querySelector('#i-logo'), iKick = intro.querySelector('#i-kick'), iF = intro.querySelector('#i-f'), iS = intro.querySelector('#i-s'), i2 = intro.querySelector('#i-2'), iSub = intro.querySelector('#i-sub')
+const outro = el('abs', stage, `left:0;width:${W}px;top:118px;text-align:center`)
+outro.innerHTML = `<div id="o-logo" class="pill" style="display:inline-block"><img src="../assets/logo-partners.webp" style="width:640px"></div>
+  <div id="o-fs" class="neon" style="font-size:270px;line-height:1.05;white-space:nowrap;margin-top:14px">FS<span style="font-size:.55em;vertical-align:top;position:relative;top:.12em">2</span></div>
+  <div id="o-tag" class="cap-title" style="font-size:58px;margin-top:16px">Good luck on the day, team S16!</div>
+  <div id="o-sub" class="cap-sub" style="font-size:34px;margin-top:26px;letter-spacing:.06em">Wednesday, 28 October 2026 · Global Kampong ITS</div>`
+const oLogo = outro.querySelector('#o-logo'), oFs = outro.querySelector('#o-fs'), oTag = outro.querySelector('#o-tag'), oSub = outro.querySelector('#o-sub')
+
+// ---- caption -----------------------------------------------------------------------------------
+const STEPS = [
+  ['staff', 'P1', '01', 'Sign in', 'One shared staff PIN', 'staff', 'booths'],
+  ['booths', 'P1', '02', 'Pick your booth', 'Switch any time, no new sign-in', 'booths', 'scan'],
+  ['scan', 'P1', '03', 'Scan the QR', 'Camera reads it by itself', 'scan', 'queue'],
+  ['queue', 'P1', '04', 'Check the photo', 'Match the face to the person', 'queue', 'states'],
+  ['states', 'P1', '05', 'Read the colours', 'Green · yellow · red', 'states', 'manual'],
+  ['manual', 'P1', '06', 'No QR? Type 4 digits', 'Last four digits of the NRP', 'manual', 'confirm'],
+  ['confirm', 'P1', '07', 'Confirm all', 'The stamp lands on their phone', 'confirm', 'history'],
+  ['history', 'P1', '08', 'Undo a mistake', 'History & undo tab', 'history', 'closed'],
+  ['closed', 'P1', '09', 'Session hours', 'Closed outside the session', 'closed', 'admin'],
+  ['admin', 'P2', '01', 'Admin sign-in', 'Password from the committee', 'admin', 'overview'],
+  ['overview', 'P2', '02', 'Live overview', 'Registrations, photos, stamps', 'overview', 'review'],
+  ['review', 'P2', '03', 'Review passports', 'Photo, notes, feedback', 'review', 'approve'],
+  ['approve', 'P2', '04', 'Approve or return', 'A return needs a note · tick Stamp4It', 'approve', 'people'],
+  ['people', 'P2', '05', 'Participants', 'Search · edit · reset PIN · delete', 'people', 'content'],
+  ['content', 'P2', '06', 'Booths & content', 'Map points, speakers, staff PIN', 'content', 'questions'],
+  ['questions', 'P2', '07', 'Feedback questions', 'Add, edit, reorder', 'questions', 'settings'],
+  ['settings', 'P2', '08', 'Settings', 'Simulation · hours · deadline', 'settings', 'export'],
+  ['export', 'P2', '09', 'Export', 'Excel (XLSX) or CSV', 'export', 'outro'],
+].map(([k, part, n, title, sub, a, b]) => ({ part, n, title, sub, t0: (k === 'staff' ? V.staff.t : V[a].t) - 0.1, t1: (b === 'outro' ? T_BROWSER_OUT - 0.1 : V[b].t - 0.1) }))
+const PARTNAME = { P1: 'Part 1 · Booth staff', P2: 'Part 2 · Admin console' }
+const capHost = el('abs', stage, 'left:0;top:0;width:100%;height:100%;pointer-events:none')
+capHost.innerHTML = `<div id="c-part" class="part abs" style="font-size:26px"></div>
+  <div id="c-row" class="abs" style="display:flex;align-items:flex-end;gap:28px">
+    <div id="c-n" class="badge" style="font-size:150px;min-width:120px"></div>
+    <div style="padding-bottom:12px"><div id="c-t" class="cap-title" style="white-space:nowrap"></div><div id="c-s" class="cap-sub" style="margin-top:10px"></div></div></div>`
+const cPart = capHost.querySelector('#c-part'), cRow = capHost.querySelector('#c-row'), cN = capHost.querySelector('#c-n'), cT = capHost.querySelector('#c-t'), cS = capHost.querySelector('#c-s')
+
+// ---- devices -----------------------------------------------------------------------------------
+const imgs = {}
+const need = new Set([...STAFF, ...PART, ...ADMIN].map((s) => s[0]))
+const dirOf = (n) => (n.startsWith('ad') ? 'shots/' : 'shots/')
+need.forEach((n) => { const i = new Image(); i.src = dirOf(n) + n + '.png'; imgs[n] = i })
+const KOREA = new Image(); KOREA.src = '../assets/stamp-korea-lg.webp'
+
+function makePhone() {
+  const ph = el('dev', stage, `width:${PW}px;height:${PHH}px;perspective:1800px;left:${-PW}px;top:${PHONE_CY - PHH / 2}px`)
+  el('bezel', ph, `border-radius:${Math.round(PW * 0.13)}px`)
+  const screen = el('screen', ph, `left:${BZ}px;top:${BZ}px;width:${scrW}px;height:${scrH}px;border-radius:${Math.round(PW * 0.105)}px`)
+  el('island', ph, `left:${PW / 2 - 50}px;top:${BZ + 14}px;width:100px;height:28px`)
+  const wrap = el('layer', screen, `width:${scrW}px;height:${scrH}px`)
+  const a = el('layer', wrap, `transform:scale(${S})`), b = el('layer', wrap, `transform:scale(${S})`)
+  const fx = el('layer', wrap, `transform:scale(${S});width:390px;height:844px`)
+  el('glass', screen)
+  return { root: ph, screen, wrap, a, b, fx }
+}
+const phoneS = makePhone(), phoneR = makePhone()
+
+const brow = el('browser', stage, `width:${BW}px;height:${BH}px;left:${BCX - BW / 2}px;top:${H}px`)
+brow.innerHTML = `<div class="bar"><div class="dot" style="background:#ff5f57"></div><div class="dot" style="background:#febc2e"></div><div class="dot" style="background:#28c840"></div><div class="url" id="b-url"></div></div>`
+const bScreen = el('screen', brow, `left:0;top:38px;width:${BW}px;height:${BH - 38}px;border-radius:0 0 14px 14px;background:#f6f3ec`)
+const bUrl = brow.querySelector('#b-url')
+const bWrap = el('layer', bScreen, `width:${BW}px;height:${BH - 38}px`)
+const bA = el('layer', bWrap, `transform:scale(${BSC})`), bB = el('layer', bWrap, `transform:scale(${BSC})`)
+const bFx = el('layer', bWrap, `transform:scale(${BSC});width:1440px;height:810px`)
+
+// ---- fx ----------------------------------------------------------------------------------------
+const flash = el('abs', stage, 'inset:0;background:#ff5a4d;opacity:0;mix-blend-mode:screen;pointer-events:none')
+const wave = el('abs', stage, 'border-radius:50%;border:6px solid rgba(255,150,140,.9);box-shadow:0 0 60px rgba(224,48,42,.8), inset 0 0 60px rgba(224,48,42,.5);opacity:0;pointer-events:none')
+const grain = el('', stage); grain.id = 'grain'
+;(() => {
+  const c = document.createElement('canvas'); c.width = c.height = 256
+  const g = c.getContext('2d'), d = g.createImageData(256, 256)
+  for (let i = 0; i < 256 * 256; i++) { const v = 90 + rnd('g' + i) * 150; d.data[i * 4] = d.data[i * 4 + 1] = d.data[i * 4 + 2] = v; d.data[i * 4 + 3] = 255 }
+  g.putImageData(d, 0, 0)
+  grain.style.backgroundImage = `url(${c.toDataURL()})`
+})()
+const vig = el('', stage); vig.id = 'vignette'
+const fade = el('abs', stage, 'inset:0;background:#000;opacity:1;pointer-events:none')
+el('abs', stage, `left:0;right:0;top:0;height:${Math.round(H * 0.04)}px;background:#000`)
+el('abs', stage, `left:0;right:0;bottom:0;height:${Math.round(H * 0.04)}px;background:#000`)
+
+// ---- per-frame logic ---------------------------------------------------------------------------
+function current(list, t) {
+  let c = 0
+  for (let i = 0; i < list.length; i++) if (t >= list[i][1]) c = i
+  return c
+}
+function showShots(layerA, layerB, list, t, dirScale, baseTransform) {
+  const c = current(list, t)
+  const cur = list[c], prev = list[Math.max(0, c - 1)]
+  const k = prog(t, cur[1], 0.34, OUT)
+  const attach = (layer, n) => { if (layer._n !== n) { layer.innerHTML = ''; const im = imgs[n].cloneNode(); im.style.cssText = layer._css; layer.appendChild(im); layer._n = n } }
+  layerA._css = layerB._css = dirScale
+  attach(layerA, cur[0])
+  if (c > 0 && k < 1) {
+    attach(layerB, prev[0])
+    layerB.style.opacity = (1 - k).toFixed(3); layerB.style.transform = `${baseTransform} translateX(${-k * 36}px)`
+    layerA.style.opacity = k.toFixed(3); layerA.style.transform = `${baseTransform} translateX(${(1 - k) * 56}px)`
+  } else {
+    layerB.style.opacity = 0
+    layerA.style.opacity = 1; layerA.style.transform = baseTransform
+  }
+  return { img: cur[0], t0: cur[1], settled: k >= 1 }
+}
+function dim(cls, x, y, w, h, a) { return `<div class="${cls}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;opacity:${a}"></div>` }
+function fxHtml(t, shot, scale) {
+  let h = ''
+  for (const [s, t0, t1, r, pad, kind] of HL) {
+    if (s !== shot || t < t0 || t > t1) continue
+    const a = prog(t, t0, 0.25) * (1 - prog(t, t1 - 0.2, 0.2)) * (0.78 + 0.22 * Math.sin(t * 7))
+    h += dim('rrect ' + kind, r.x - pad, r.y - pad, r.w + pad * 2, r.h + pad * 2, a.toFixed(3))
+  }
+  for (const [s, tt, p] of TAPS) {
+    if (s !== shot) continue
+    const a = tt - 0.45, d = t - a
+    if (d < 0 || d > 1.1) continue
+    const arrive = prog(t, a, 0.4, OUT)
+    const x = lerp(p.x + 110, p.x, arrive), y = lerp(p.y + 140, p.y, arrive)
+    const vis = clamp01(d / 0.1) * (1 - prog(t, tt + 0.25, 0.2))
+    h += `<div class="touch" style="left:${x}px;top:${y}px;opacity:${vis};transform:scale(${t > tt ? 0.8 : 1})"></div>`
+    const rp = prog(t, tt, 0.5, OUT)
+    if (t > tt) h += `<div class="ring" style="left:${p.x - 14 - rp * 52}px;top:${p.y - 14 - rp * 52}px;width:${28 + rp * 104}px;height:${28 + rp * 104}px;opacity:${1 - rp}"></div>`
+  }
+  return h
+}
+function focusFor(t, shot) {
+  let best = null
+  for (const [s, t0, t1, x, y, sc] of FOCUS) {
+    if (s !== shot || t < t0 - 0.9 || t > t1 + 0.9) continue
+    const k = prog(t, t0, 0.9, STD) * (1 - prog(t, t1, 0.9, STD))
+    if (k > 0.001) best = { x, y, k: sc > 1 ? 1 + (sc - 1) * k : 1, sc }
+  }
+  return best
+}
+
+window.seek = async function (t) {
+  t = Math.min(t, CUES.duration)
+  const surge = Math.max(0, 1 - Math.abs(t - HIT.stamp) * 2.2) * 0.5 + Math.max(0, 1 - Math.abs(t - HIT.outro) * 1.6) * 0.5 + Math.max(0, 1 - Math.abs(t - HIT.title) * 2) * 0.4
+  redGlow.style.opacity = (0.55 + 0.2 * Math.sin(t * 1.1) + surge * 0.9).toFixed(3)
+  smoke1.style.transform = `translate(${Math.sin(t * 0.35) * 40}px, ${Math.cos(t * 0.3) * -26}px)`
+  smoke2.style.transform = `translate(${Math.sin(t * 0.3 + 2) * -46}px, ${Math.cos(t * 0.25) * -22}px)`
+  clouds.style.transform = `translateX(${t * -5}px)`
+  sporeEls.forEach((s, i) => {
+    const per = 7 + rnd('sp' + i) * 6, ph = rnd('sq' + i) * per
+    const p = ((t + ph) % per) / per
+    s.style.transform = `translate(${rnd('sx' + i) * W + Math.sin(p * 6 + i) * 40}px,${H * (0.95 - p * 0.95)}px) scale(${0.6 + rnd('ss' + i) * 0.9})`
+    s.style.opacity = (Math.sin(p * Math.PI) * 0.7).toFixed(3)
+  })
+  flowers.forEach((f) => { f.style.transform = `rotate(${f._f.r + Math.sin(t * 0.9 + f._i * 1.7) * 4}deg) scale(${1 + Math.sin(t * 0.6 + f._i) * 0.03})` })
+
+  // lights: power up with flicker, then steady; quieter while the admin console fills the screen
+  const adminK = prog(t, T_BROWSER_IN, 0.8) * (1 - prog(t, T_BROWSER_OUT, 0.8))
+  gar.style.opacity = (1 - 0.82 * adminK).toFixed(3)
+  bulbRefs.forEach((b, i) => {
+    const on0 = 0.3 + i * 0.08 + rnd('on' + i) * 0.12
+    const q = Math.floor(t * 24)
+    const stutter = rnd(`f${i}-${q}`) < 0.05 || (t < on0 + 0.9 && rnd(`p${i}-${q}`) < 0.45) ? 0.18 : 1
+    const k = clamp01((t - on0) / 0.5) * stutter
+    const v = Math.min(1, k + surge * 0.4)
+    b.g.setAttribute('opacity', (0.38 * v + surge * 0.3).toFixed(3))
+    b.b.setAttribute('opacity', (0.1 + 0.9 * v).toFixed(3))
+    b.h.setAttribute('opacity', (0.55 * v).toFixed(3))
+  })
+
+  // intro card
+  const inIntro = t < V.staff.t - 0.2
+  intro.style.display = inIntro ? 'block' : 'none'
+  if (inIntro) {
+    const ik = prog(t, 0.5, 0.8, OUT)
+    iLogo.style.opacity = ik.toFixed(3)
+    iKick.style.opacity = prog(t, 0.9, 0.7, OUT).toFixed(3)
+    const lit = (span, t0) => { const q = Math.floor(t * 30); span.style.opacity = (t >= t0 ? (t < t0 + 0.35 ? (rnd(`${t0}-${q}`) < 0.5 ? 0.25 : 1) : 1) : 0).toFixed(3) }
+    lit(iF, HIT.title); lit(iS, HIT.title + 0.28); lit(i2, HIT.title + 0.56)
+    iSub.style.opacity = prog(t, HIT.title + 0.9, 0.6, OUT).toFixed(3)
+    const out = prog(t, V.staff.t - 1.0, 0.8, IN)
+    intro.style.opacity = (1 - out).toFixed(3)
+    intro.style.transform = `translateY(${-out * 140}px) scale(${1 - out * 0.15})`
+  }
+
+  // caption
+  let step = null
+  for (const s of STEPS) if (t >= s.t0 && t < s.t1) step = s
+  const browserNow = t >= T_BROWSER_IN - 0.3 && t < T_BROWSER_OUT
+  if (!step) capHost.style.opacity = 0
+  else {
+    capHost.style.opacity = 1
+    if (capHost._key !== step.part + step.n) {
+      cPart.textContent = PARTNAME[step.part]; cN.textContent = step.n; cT.textContent = step.title; cS.textContent = step.sub; capHost._key = step.part + step.n
+    }
+    const inK = prog(t, step.t0, 0.5, OUT), outK = prog(t, step.t1 - 0.25, 0.25, IN)
+    const a = inK * (1 - outK)
+    const bro = step.part === 'P2'
+    cPart.style.left = (bro ? 140 : 140) + 'px'; cPart.style.top = (bro ? 38 : 300) + 'px'
+    cRow.style.left = '140px'; cRow.style.top = (bro ? 66 : 350) + 'px'
+    cT.style.fontSize = (bro ? 54 : 70) + 'px'; cS.style.fontSize = (bro ? 28 : 36) + 'px'; cN.style.fontSize = (bro ? 110 : 150) + 'px'; cN.style.minWidth = (bro ? 100 : 130) + 'px'
+    const dual = t >= HIT.tapConfirm - 0.2 && t < V.history.t
+    if (dual) { cT.style.fontSize = '58px'; cS.style.fontSize = '32px' }
+    capHost.style.opacity = a.toFixed(3)
+    capHost.style.transform = `translateY(${(1 - inK) * 30 - outK * 16}px)`
+  }
+
+  // phones --------------------------------------------------------------------------------------
+  const inP = t >= T_PHONE_IN && t < T_PHONE_OUT + 1.2
+  phoneS.root.style.display = inP ? 'block' : 'none'
+  if (inP) {
+    const sp = spring(t - T_PHONE_IN, { duration: 0.85, bounce: 0.1 })
+    const leave = prog(t, T_PHONE_OUT, 0.8, IN)
+    const dualK = prog(t, HIT.tapConfirm - 0.1, 0.7, STD) * (1 - prog(t, V.history.t - 0.4, 0.7, STD))
+    const cx = lerp(CX_SINGLE, CX_L, dualK)
+    const y = (1 - sp) * 1100 + leave * 1400 + Math.sin(t * 0.9) * 7
+    const sh = camShake(t)
+    phoneS.root.style.left = cx - PW / 2 + 'px'
+    phoneS.root.style.opacity = (clamp01((t - T_PHONE_IN) / 0.2) * (1 - clamp01((leave - 0.7) / 0.3))).toFixed(3)
+    const shotS = showShots(phoneS.a, phoneS.b, STAFF, t, `width:390px;height:844px`, `scale(${S})`)
+    const foc = focusFor(t, shotS.img)
+    phoneS.root.style.transform = `translate(${sh.x}px, ${y + sh.y}px) rotate(${(1 - sp) * -6 + sh.r}deg)`
+    phoneS.wrap.style.transformOrigin = foc ? `${foc.x * S}px ${foc.y * S}px` : '0 0'
+    phoneS.wrap.style.transform = foc ? `scale(${foc.k})` : 'none'
+    phoneS.fx.innerHTML = fxHtml(t, shotS.img, S)
+  }
+  // participant phone (confirm scene)
+  const showR = t >= HIT.tapConfirm + 0.1 && t < V.history.t + 0.2
+  phoneR.root.style.display = showR ? 'block' : 'none'
+  if (showR) {
+    const inK = spring(t - (HIT.tapConfirm + 0.1), { duration: 0.7, bounce: 0.08 })
+    const outK = prog(t, V.history.t - 0.4, 0.7, IN)
+    phoneR.root.style.left = CX_R - PW / 2 + 'px'
+    phoneR.root.style.opacity = (clamp01((t - HIT.tapConfirm - 0.1) / 0.2) * (1 - outK)).toFixed(3)
+    phoneR.root.style.transform = `translate(${(1 - inK) * 900 + outK * 900}px, ${Math.sin(t * 0.9 + 1) * 7}px) rotate(${(1 - inK) * 5}deg)`
+    showShots(phoneR.a, phoneR.b, PART, t, `width:390px;height:844px`, `scale(${S})`)
+    let h = ''
+    const d = t - HIT.stamp
+    if (t < HIT.stamp + 0.3) {
+      const patch = t < HIT.stamp ? 1 : 1 - prog(t, HIT.stamp, 0.1)
+      h += `<div style="position:absolute;left:118px;top:158px;width:154px;height:156px;background:rgb(233,225,211);opacity:${patch}"></div>`
+      const p = prog(t, HIT.stamp - 0.18, 0.18, bezier(0.2, 0.6, 0.4, 1))
+      const a = clamp01((t - (HIT.stamp - 0.18)) / 0.05) * (1 - prog(t, HIT.stamp + 0.1, 0.18))
+      h += `<img src="../assets/stamp-korea-lg.webp" style="position:absolute;left:127px;top:166px;width:136px;height:136px;opacity:${a};transform:scale(${lerp(2.7, 1, p)}) rotate(${lerp(-12, 0, p)}deg)">`
+    }
+    if (d > 0 && d < 1.2) h += `<div style="position:absolute;left:50%;top:230px;width:420px;height:420px;margin:-210px 0 0 -210px;border-radius:50%;background:radial-gradient(rgba(255,120,100,${0.5 * (1 - d / 1.2)}),transparent 65%)"></div>`
+    phoneR.fx.innerHTML = h
+  }
+
+  // browser (admin) -----------------------------------------------------------------------------
+  const inB = t >= T_BROWSER_IN && t < T_BROWSER_OUT + 1.2
+  brow.style.display = inB ? 'block' : 'none'
+  if (inB) {
+    const sp = spring(t - T_BROWSER_IN, { duration: 0.9, bounce: 0.06 })
+    const leave = prog(t, T_BROWSER_OUT, 0.8, IN)
+    brow.style.top = lerp(H + 40, BTOP, sp) + leave * 1300 + 'px'
+    const shotB = showShots(bA, bB, ADMIN, t, 'width:1440px;height:810px', `scale(${BSC})`)
+    bUrl.textContent = 'fs2-oct.vercel.app/' + ADMIN.find((s) => s[0] === shotB.img)[2]
+    const foc = focusFor(t, shotB.img)
+    bWrap.style.transformOrigin = foc ? `${foc.x * BSC}px ${foc.y * BSC}px` : '0 0'
+    bWrap.style.transform = foc ? `scale(${foc.k})` : 'none'
+    bFx.innerHTML = fxHtml(t, shotB.img, BSC)
+  }
+
+  // outro
+  const inO = t > T_OUTRO - 0.4
+  outro.style.display = inO ? 'block' : 'none'
+  if (inO) {
+    const ot = t - T_OUTRO
+    oLogo.style.opacity = prog(t, T_OUTRO + 0.2, 0.7, OUT).toFixed(3)
+    const q = Math.floor(t * 30)
+    oFs.style.opacity = (prog(t, T_OUTRO - 0.05, 0.2) * (rnd('ofs-' + q) < 0.1 && ot < 0.4 ? 0.3 : 1)).toFixed(3)
+    oFs.style.transform = `scale(${1.2 - 0.2 * OUT(clamp01(ot / 1.1))})`
+    oTag.style.opacity = prog(t, V.outro.t + 0.9, 0.6, OUT).toFixed(3)
+    oSub.style.opacity = (prog(t, V.outro.t + 1.7, 0.6, OUT) * 0.9).toFixed(3)
+  }
+
+  // impacts
+  const d = t - HIT.stamp
+  if (d > 0 && d < 0.9) {
+    const p = OUT(d / 0.9), size = 200 + p * 1900
+    wave.style.cssText += `;left:${CX_R - size / 2}px;top:${PHONE_CY - size / 2 - 80}px;width:${size}px;height:${size}px;opacity:${(1 - p) * 0.8}`
+  } else wave.style.opacity = 0
+  const fl = Math.max(0, 1 - Math.abs(d + 0.02) * 9) * 0.35 + Math.max(0, 1 - Math.abs(t - T_OUTRO) * 8) * 0.7 + Math.max(0, 1 - Math.abs(t - HIT.title) * 10) * 0.3
+  flash.style.opacity = Math.min(0.8, fl).toFixed(3)
+
+  const gq = Math.floor(t * 24)
+  grain.style.transform = `translate(${Math.floor(rnd('gx' + gq) * 100)}px, ${Math.floor(rnd('gy' + gq) * 100)}px)`
+  fade.style.opacity = (1 - prog(t, 0, 0.7, STD) + prog(t, CUES.duration - 0.8, 0.8, STD)).toFixed(3)
+}
+
+function camShake(t) {
+  const d = t - HIT.stamp
+  if (d < 0 || d > 0.7) return { x: 0, y: 0, r: 0 }
+  const a = Math.exp(-d * 7) * 14
+  return { x: Math.sin(d * 90) * a, y: Math.cos(d * 77) * a * 0.7, r: Math.sin(d * 60) * a * 0.03 }
+}
+
+window.READY = Promise.all([document.fonts.ready, KOREA.decode().catch(() => {}), ...Object.values(imgs).map((i) => (i.decode ? i.decode().catch(() => {}) : Promise.resolve()))])
+</script>
+</body>
+</html>

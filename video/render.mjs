@@ -11,16 +11,17 @@ const [mode, ar, a3, a4] = process.argv.slice(2)
 const FFMPEG = process.env.FFMPEG || 'ffmpeg'
 const [W, H] = ar === 'h' ? [1920, 1080] : [1080, 1920]
 
-const cues = JSON.parse(readFileSync('video/cues.json', 'utf8'))
-const rects = JSON.parse(readFileSync('video/shots/rects.json', 'utf8'))
-writeFileSync('video/data.js', `const CUES = ${JSON.stringify(cues)}\nconst SHOTS_RECTS = ${JSON.stringify(rects)}\n`)
-// the page reads cues.js
-writeFileSync('video/cues.js', readFileSync('video/data.js', 'utf8'))
+// another film: HTML=video/committee/index.html CUES=video/committee/cues.json RECTS=video/committee/shots/rects.json
+const HTML = process.env.HTML || 'video/index.html'
+const cues = JSON.parse(readFileSync(process.env.CUES || 'video/cues.json', 'utf8'))
+const rects = JSON.parse(readFileSync(process.env.RECTS || 'video/shots/rects.json', 'utf8'))
+// the page reads cues.js next to it
+writeFileSync(path.join(path.dirname(HTML), 'cues.js'), `const CUES = ${JSON.stringify(cues)}\nconst SHOTS_RECTS = ${JSON.stringify(rects)}\n`)
 
 const browser = await chromium.launch()
 const page = await browser.newPage({ viewport: { width: W, height: H } })
 page.on('pageerror', (e) => console.error('PAGEERROR', e.message))
-await page.goto('file://' + path.resolve('video/index.html') + `?w=${W}&h=${H}`)
+await page.goto('file://' + path.resolve(HTML) + `?w=${W}&h=${H}`)
 await page.waitForFunction(() => window.seek && window.READY)
 await page.evaluate(() => window.READY)
 

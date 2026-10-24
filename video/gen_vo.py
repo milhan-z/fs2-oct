@@ -4,7 +4,7 @@ A single flat read sounds like a screen reader, so every line is split into phra
 own pace / pitch / loudness (low and slow for the mystery, punchy for the call-to-action), with short
 hand-timed pauses between them. Voice: en-US-AndrewNeural (the most dynamic deep US voice we measured).
 
-Usage: python video/gen_vo.py <out_dir> <ffmpeg>     (needs: pip install edge-tts numpy)
+Usage: python video/gen_vo.py <out_dir> <ffmpeg> [script.json]     (needs: pip install edge-tts numpy)
 The script text is public copy only; it is sent to Microsoft's TTS service to be synthesised.
 Writes <out_dir>/<key>.wav (mono 44.1 kHz, trimmed) and <out_dir>/durations.json.
 """
@@ -110,5 +110,11 @@ async def main(out: str, ffmpeg: str) -> None:
         print(key, durations[key], offs)
     json.dump({"durations": durations, "segment_offsets": offsets}, open(f"{out}/durations.json", "w"), indent=1)
 
+
+if len(sys.argv) > 3:
+    # another film: {"voice": "...", "lines": {key: [[text, rate, pitch, volume, pause], ...]}}
+    cfg = json.load(open(sys.argv[3], encoding="utf-8"))
+    VOICE = cfg.get("voice", VOICE)
+    LINES = {k: [tuple(seg) for seg in v] for k, v in cfg["lines"].items()}
 
 asyncio.run(main(sys.argv[1], sys.argv[2]))
