@@ -401,31 +401,116 @@ function FacilityRow({ f: initial, onSaved }: { f: Facility; onSaved: (m?: strin
 }
 
 function QuestionsCard({ questions, onSaved }: { questions: Question[]; onSaved: (m?: string) => void }) {
+  const [type, setType] = useState<Question['tipe']>('skala_1_5')
+  const [err, setErr] = useState('')
+  const run = async (fn: () => Promise<void>, msg?: string) => {
+    setErr('')
+    try {
+      await fn()
+      onSaved(msg)
+    } catch (e) {
+      setErr((e as Error).message)
+    }
+  }
+  const add = () =>
+    run(
+      () =>
+        api.adminUpsertQuestion({
+          id: `q${Date.now().toString(36)}`,
+          teks: type === 'skala_1_5' ? 'New rating question' : 'New open question',
+          tipe: type,
+          wajib: type === 'skala_1_5',
+          sort: Math.max(0, ...questions.map((q) => q.sort)) + 1,
+        }),
+      'Question added — edit the text below',
+    )
+  const move = (i: number, d: -1 | 1) => {
+    const ids = questions.map((q) => q.id)
+    ;[ids[i], ids[i + d]] = [ids[i + d], ids[i]]
+    return run(() => api.adminSetQuestionOrder(ids))
+  }
   return (
     <div className={card}>
-      <h2 className="text-[17px] font-bold">Feedback questions</h2>
+      <h2 className="text-[17px] font-bold">Feedback questions ({questions.length})</h2>
+      <p className="mt-1 text-[14px] text-[#6b6058]">Add as many as you need. Participants answer one question at a time, in this order. Scale questions are rated 1–5; open questions take free text.</p>
       {questions.map((q, i) => (
-        <QuestionRow key={q.id} q={q} n={i + 1} onSaved={onSaved} />
+        <QuestionRow key={q.id} q={q} n={i + 1} first={i === 0} last={i === questions.length - 1} onMove={(d) => move(i, d)} onSaved={onSaved} onError={setErr} />
       ))}
+      {!questions.length && <p className="mt-3 text-[14px] text-[#6b6058]">No questions — participants can submit without feedback.</p>}
+      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[#efe9df] pt-4">
+        <label htmlFor="new-q-type" className="text-[14px] font-semibold">
+          New question
+        </label>
+        <select id="new-q-type" className="field-paper max-w-[200px]" value={type} onChange={(e) => setType(e.target.value as Question['tipe'])}>
+          <option value="skala_1_5">Scale 1–5</option>
+          <option value="teks">Open text</option>
+        </select>
+        <button type="button" className="btn btn-red min-h-11 text-[14px]" onClick={add}>
+          Add question
+        </button>
+      </div>
+      {err && (
+        <p className="mt-2 text-[14px] text-[#9b2c2c]" role="alert">
+          {err}
+        </p>
+      )}
     </div>
   )
 }
 
-function QuestionRow({ q: initial, n, onSaved }: { q: Question; n: number; onSaved: (m?: string) => void }) {
+function QuestionRow({ q: initial, n, first, last, onMove, onSaved, onError }: { q: Question; n: number; first: boolean; last: boolean; onMove: (d: -1 | 1) => void; onSaved: (m?: string) => void; onError: (m: string) => void }) {
   const [q, setQ] = useState(initial)
-  const dirty = JSON.stringify(q) !== JSON.stringify(initial)
+  const dirty = q.teks !== initial.teks || q.wajib !== initial.wajib
+  const btn = 'flex h-10 w-10 items-center justify-center rounded-lg border border-[#d5cabd] text-[16px] disabled:opacity-30'
   return (
-    <div className="mt-3 grid items-end gap-2 sm:grid-cols-[1fr_auto_auto]">
-      <Field label={`Question ${n} (${q.tipe === 'skala_1_5' ? 'scale 1–5' : 'text'})`}>
-        <input className="field-paper" value={q.teks} onChange={(e) => setQ({ ...q, teks: e.target.value })} />
-      </Field>
-      <label className="flex min-h-11 items-center gap-2 text-[14px]">
-        <input type="checkbox" className="h-5 w-5" checked={q.wajib} onChange={(e) => setQ({ ...q, wajib: e.target.checked })} />
-        Required
-      </label>
-      <button type="button" className="btn btn-red min-h-11 text-[14px]" disabled={!dirty} onClick={async () => (await api.adminUpsertQuestion(q), onSaved())}>
-        Save
-      </button>
+    <div className="mt-3 rounded-xl border border-[#efe9df] p-3">
+      <div className="grid items-end gap-2 sm:grid-cols-[1fr_auto]">
+        <Field label={`Question ${n} · ${q.tipe === 'skala_1_5' ? 'scale 1–5' : 'open text'}`}>
+          <input className="field-paper" maxLength={240} value={q.teks} onChange={(e) => setQ({ ...q, teks: e.target.value })} />
+        </Field>
+        <label className="flex min-h-11 items-center gap-2 text-[14px]">
+          <input type="checkbox" className="h-5 w-5" checked={q.wajib} onChange={(e) => setQ({ ...q, wajib: e.target.checked })} />
+          Required
+        </label>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button type="button" className={btn} aria-label={`Move question ${n} up`} disabled={first} onClick={() => onMove(-1)}>
+          ↑
+        </button>
+        <button type="button" className={btn} aria-label={`Move question ${n} down`} disabled={last} onClick={() => onMove(1)}>
+          ↓
+        </button>
+        <button
+          type="button"
+          className="min-h-10 rounded-lg border border-[#e7b7b3] px-3 text-[14px] font-semibold text-[#9b2c2c]"
+          onClick={async () => {
+            if (!confirm(`Delete question ${n}? Answers already given to it are deleted too.`)) return
+            try {
+              await api.adminDeleteQuestion(q.id)
+              onSaved('Question deleted')
+            } catch (e) {
+              onError((e as Error).message)
+            }
+          }}
+        >
+          Delete
+        </button>
+        <button
+          type="button"
+          className="btn btn-red ml-auto min-h-10 text-[14px]"
+          disabled={!dirty}
+          onClick={async () => {
+            try {
+              await api.adminUpsertQuestion(q)
+              onSaved()
+            } catch (e) {
+              onError((e as Error).message)
+            }
+          }}
+        >
+          Save
+        </button>
+      </div>
     </div>
   )
 }

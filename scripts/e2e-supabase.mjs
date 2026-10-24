@@ -150,7 +150,9 @@ try {
 
   await page.goto(`${BASE}/exit`)
   await page.getByRole('radio').nth(4).click()
-  await page.getByRole('radio').nth(8).click()
+  await wait(600)
+  await page.getByRole('radio').nth(3).click()
+  await wait(600)
   await wait(1200)
   await page.getByRole('button', { name: 'Submit', exact: true }).click()
   await page.waitForURL('**/status', { timeout: 10000 })

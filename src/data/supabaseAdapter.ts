@@ -288,6 +288,8 @@ export function supabaseAdapter(): Api {
     adminUpsertFacility: (f) => rpc('admin_upsert_facility', { p_token: aToken(), p_facility: f }),
     adminDeleteFacility: (id) => rpc('admin_delete_facility', { p_token: aToken(), p_id: id }),
     adminUpsertQuestion: (q) => rpc('admin_upsert_question', { p_token: aToken(), p_question: q }),
+    adminDeleteQuestion: (id) => rpc('admin_delete_question', { p_token: aToken(), p_id: id }),
+    adminSetQuestionOrder: (ids) => rpc('admin_set_question_order', { p_token: aToken(), p_ids: ids }),
     async adminSetSettings(s) {
       await rpc('admin_set_settings', { p_token: aToken(), p_settings: s })
       changed()

@@ -82,6 +82,10 @@ export interface Api {
   adminUpsertFacility(f: Facility): Promise<void>
   adminDeleteFacility(id: string): Promise<void>
   adminUpsertQuestion(q: Question): Promise<void>
+  /** removes the question and every answer given to it */
+  adminDeleteQuestion(id: string): Promise<void>
+  /** question ids in their new order */
+  adminSetQuestionOrder(ids: string[]): Promise<void>
   adminSetSettings(s: Partial<Settings>): Promise<void>
   adminExport(): Promise<ExportData>
   /** stamp / speaker photo upload (admin) — returns a URL usable in <img> */

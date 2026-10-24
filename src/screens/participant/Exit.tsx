@@ -6,7 +6,7 @@ import { useContent } from '../../app/providers'
 import { useParticipant } from '../../app/participant'
 import { ErrorText, Spinner } from '../../components/ui'
 import { api } from '../../data/api'
-import type { Answer } from '../../data/types'
+import type { Answer, Question } from '../../data/types'
 import { fmtDeadline } from '../../data/time'
 import { sfx, vibrate } from '../../app/sound'
 import { InkIcon } from '../../booklet/icons'
@@ -24,6 +24,7 @@ export function Exit({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [sending, setSending] = useState(false)
+  const [step, setStep] = useState<number | null>(null)
   const timer = useRef(0)
 
   useEffect(() => {
@@ -42,6 +43,8 @@ export function Exit({ onClose }: { onClose: () => void }) {
     return !!(a?.nilaiInt || a?.nilaiTeks?.trim())
   }
   const required = questions.filter((q) => q.wajib)
+  const firstOpen = questions.findIndex((q) => !answered(q.id))
+  const startStep = step ?? (firstOpen < 0 ? 0 : firstOpen)
   const answeredReq = required.filter((q) => answered(q.id)).length
 
   const setAnswer = (questionId: string, patch: Partial<Answer>) => {
@@ -59,7 +62,7 @@ export function Exit({ onClose }: { onClose: () => void }) {
       : prog.resumeCount < total
         ? `Finish notes for ${total - prog.resumeCount} more booth(s).`
         : missingQ >= 0
-          ? `Answer question ${questions.indexOf(required[missingQ]) + 1} to submit`
+          ? `Answer question ${questions.indexOf(required[missingQ]) + 1} of ${questions.length} to submit`
           : ''
 
   const submit = async () => {
@@ -123,36 +126,17 @@ export function Exit({ onClose }: { onClose: () => void }) {
         ))}
       </ul>
 
-      <section className="mt-8 flex flex-col gap-7" aria-label="Feedback">
-        {questions.map((q, qi) => (
-          <fieldset key={q.id}>
-            <legend className="text-[15px] leading-snug font-semibold">
-              <span className="font-mono text-ink/55">{qi + 1}.</span> {q.teks} {q.wajib ? <span className="text-stamp">*</span> : <span className="font-normal text-ink/55">(optional)</span>}
-            </legend>
-            {q.tipe === 'skala_1_5' ? (
-              <div className="mt-3 grid grid-cols-5 gap-2" role="radiogroup" aria-label={q.teks}>
-                {[1, 2, 3, 4, 5].map((n) => {
-                  const on = get(q.id)?.nilaiInt === n
-                  return (
-                    <button
-                      key={n}
-                      type="button"
-                      role="radio"
-                      aria-checked={on}
-                      onClick={() => setAnswer(q.id, { nilaiInt: n })}
-                      className={`h-11 rounded-[4px] font-mono text-[17px] transition-colors duration-[120ms] ${on ? 'bg-ink font-bold text-paper' : 'text-ink shadow-[inset_0_0_0_1.5px_rgba(42,30,26,.45)]'}`}
-                    >
-                      {n}
-                    </button>
-                  )
-                })}
-              </div>
-            ) : (
-              <textarea rows={3} className="ruled mt-3" aria-label={q.teks} value={get(q.id)?.nilaiTeks ?? ''} onChange={(e) => setAnswer(q.id, { nilaiTeks: e.target.value })} />
-            )}
-          </fieldset>
-        ))}
-      </section>
+      {questions.length > 0 && (
+        <FeedbackStepper
+          questions={questions}
+          step={Math.min(startStep, questions.length - 1)}
+          setStep={setStep}
+          get={get}
+          answered={answered}
+          setAnswer={setAnswer}
+          reduce={!!reduce}
+        />
+      )}
 
       <div className="mt-auto pt-10">
         <ErrorText onPaper>{err}</ErrorText>
@@ -205,5 +189,122 @@ function EnvelopeAnimation() {
         </motion.div>
       </div>
     </motion.div>
+  )
+}
+
+
+/**
+ * Feedback, one question at a time — works for 3 questions or 30. A scale answer moves on by
+ * itself; the progress segments are tappable to jump back or ahead.
+ */
+function FeedbackStepper({
+  questions,
+  step,
+  setStep,
+  get,
+  answered,
+  setAnswer,
+  reduce,
+}: {
+  questions: Question[]
+  step: number
+  setStep: (n: number) => void
+  get: (id: string) => Answer | undefined
+  answered: (id: string) => boolean
+  setAnswer: (id: string, patch: Partial<Answer>) => void
+  reduce: boolean
+}) {
+  const q = questions[step]
+  const n = questions.length
+  const dir = useRef(1)
+  const go = (to: number) => {
+    dir.current = to >= step ? 1 : -1
+    setStep(Math.max(0, Math.min(n - 1, to)))
+  }
+  const advance = useRef(0)
+  useEffect(() => () => clearTimeout(advance.current), [])
+  const doneCount = questions.filter((x) => answered(x.id)).length
+  return (
+    <section className="mt-8" aria-label="Feedback">
+      <div className="flex items-baseline justify-between">
+        <h2 className="font-serif text-[20px] font-bold">Feedback</h2>
+        <p className="font-mono text-[12px] text-ink/65" aria-live="polite">
+          Question {step + 1} of {n} · {doneCount} answered
+        </p>
+      </div>
+      <ol className="mt-3 flex gap-1" aria-label="Questions">
+        {questions.map((x, i) => (
+          <li key={x.id} className="flex-1">
+            <button
+              type="button"
+              aria-label={`Question ${i + 1}${answered(x.id) ? ', answered' : x.wajib ? ', required' : ''}`}
+              aria-current={i === step ? 'step' : undefined}
+              onClick={() => go(i)}
+              className="group flex h-6 w-full items-center"
+            >
+              <span className={`block h-[5px] w-full rounded-full transition-colors duration-150 ${i === step ? 'bg-stamp' : answered(x.id) ? 'bg-ink/70' : 'bg-ink/20'}`} />
+            </button>
+          </li>
+        ))}
+      </ol>
+
+      <div className="relative mt-3 min-h-[188px] overflow-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.fieldset
+            key={q.id}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, x: 28 * dir.current }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, x: -28 * dir.current }}
+            transition={{ duration: 0.18, ease: EASE }}
+          >
+            <legend className="text-[17px] leading-snug font-semibold">
+              {q.teks} {q.wajib ? <span className="text-stamp">*</span> : <span className="font-normal text-ink/55">(optional)</span>}
+            </legend>
+            {q.tipe === 'skala_1_5' ? (
+              <>
+                <div className="mt-4 grid grid-cols-5 gap-2" role="radiogroup" aria-label={q.teks}>
+                  {[1, 2, 3, 4, 5].map((v) => {
+                    const on = get(q.id)?.nilaiInt === v
+                    return (
+                      <button
+                        key={v}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => {
+                          setAnswer(q.id, { nilaiInt: v })
+                          clearTimeout(advance.current)
+                          if (step < n - 1) advance.current = window.setTimeout(() => go(step + 1), reduce ? 0 : 280)
+                        }}
+                        className={`h-12 rounded-[4px] font-mono text-[18px] transition-colors duration-[120ms] ${on ? 'bg-ink font-bold text-paper' : 'text-ink shadow-[inset_0_0_0_1.5px_rgba(42,30,26,.45)]'}`}
+                      >
+                        {v}
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="mt-2 flex justify-between text-[12px] text-ink/55">
+                  <span>Not great</span>
+                  <span>Excellent</span>
+                </p>
+              </>
+            ) : (
+              <textarea rows={4} className="ruled mt-4" aria-label={q.teks} value={get(q.id)?.nilaiTeks ?? ''} onChange={(e) => setAnswer(q.id, { nilaiTeks: e.target.value })} />
+            )}
+          </motion.fieldset>
+        </AnimatePresence>
+      </div>
+
+      <div className="mt-2 flex items-center justify-between">
+        <button type="button" onClick={() => go(step - 1)} disabled={step === 0} className="min-h-11 px-1 text-[15px] font-semibold text-ink/80 underline underline-offset-4 disabled:opacity-0">
+          Back
+        </button>
+        {step < n - 1 && (
+          <button type="button" onClick={() => go(step + 1)} disabled={q.wajib && !answered(q.id)} className="min-h-11 px-1 text-[15px] font-semibold text-stamp underline underline-offset-4 disabled:text-ink/35 disabled:no-underline">
+            {answered(q.id) ? 'Next →' : q.wajib ? 'Next →' : 'Skip →'}
+          </button>
+        )}
+      </div>
+    </section>
   )
 }

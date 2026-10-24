@@ -757,9 +757,29 @@ export const mockAdapter: Api = {
   async adminUpsertQuestion(q) {
     await delay()
     requireAdmin()
+    if (q.teks.trim().length < 3 || q.teks.length > 240) throw new ApiError('invalid', 'Question must be 3–240 characters.')
     const i = db.content.questions.findIndex((x) => x.id === q.id)
     if (i >= 0) db.content.questions[i] = q
     else db.content.questions.push(q)
+    save()
+  },
+
+  async adminDeleteQuestion(id) {
+    await delay()
+    requireAdmin()
+    db.content.questions = db.content.questions.filter((q) => q.id !== id)
+    db.answers = db.answers.filter((a) => a.questionId !== id)
+    audit('admin', 'delete_question', id)
+    save()
+  },
+
+  async adminSetQuestionOrder(ids) {
+    await delay()
+    requireAdmin()
+    ids.forEach((id, i) => {
+      const q = db.content.questions.find((x) => x.id === id)
+      if (q) q.sort = i + 1
+    })
     save()
   },
 
