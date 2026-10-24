@@ -2,13 +2,46 @@
   "duration": 29.8,
   "fps": 30,
   "voice": [
-    { "key": "hook", "t": 0.9, "dur": 2.44 },
-    { "key": "signin", "t": 4.0, "dur": 3.2 },
-    { "key": "map", "t": 7.6, "dur": 2.78 },
-    { "key": "qr", "t": 10.8, "dur": 4.54 },
-    { "key": "notes", "t": 15.4, "dur": 2.96 },
-    { "key": "submit", "t": 19.0, "dur": 3.37 },
-    { "key": "outro", "t": 23.4, "dur": 3.87 }
+    {
+      "key": "hook",
+      "t": 0.1,
+      "dur": 3.18
+    },
+    {
+      "key": "signin",
+      "t": 4.2,
+      "dur": 1.96
+    },
+    {
+      "key": "map",
+      "t": 7.65,
+      "dur": 1.84
+    },
+    {
+      "key": "qr",
+      "t": 11.64,
+      "dur": 2.61
+    },
+    {
+      "key": "notes",
+      "t": 15.5,
+      "dur": 2.11
+    },
+    {
+      "key": "submit",
+      "t": 19.1,
+      "dur": 2.75
+    },
+    {
+      "key": "outro",
+      "t": 23.4,
+      "dur": 3.63
+    }
   ],
-  "hits": { "stamp": 13.7, "title": 2.15, "outro": 23.4, "send": 22.1 }
+  "hits": {
+    "stamp": 13.7,
+    "title": 2.26,
+    "outro": 23.4,
+    "send": 22.1
+  }
 }

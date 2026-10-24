@@ -175,13 +175,13 @@ const imgs = {}
 SHOTS.forEach((n) => { const i = new Image(); i.src = `shots/${n}.png`; i.style.cssText = 'width:390px;height:844px'; imgs[n] = i })
 
 // outro block
-const outro = el('abs', stage, `left:0;width:${W}px;top:${VERT ? 430 : 190}px;text-align:center`)
-outro.innerHTML = `<div id="o-fs" class="neon" style="font-size:${VERT ? 420 : 330}px;line-height:1.05;white-space:nowrap">FS<span style="font-size:.55em;vertical-align:top;position:relative;top:.12em">2</span></div>
-  <div id="o-tag" class="cap-title" style="font-size:${VERT ? 64 : 62}px;margin-top:30px;font-style:normal">Stranger Stories<br>from the Other Side!</div>
-  <div id="o-date" class="cap-sub" style="font-size:${VERT ? 40 : 36}px;margin-top:46px;letter-spacing:.06em">Wednesday, 28 October 2026</div>
-  <div id="o-venue" class="cap-sub" style="font-size:${VERT ? 34 : 30}px;margin-top:8px;opacity:.8">14:00 – 17:30 WIB · Global Kampong ITS</div>
-  <div id="o-logo" class="pill" style="display:inline-block;margin-top:${VERT ? 70 : 50}px"><img src="assets/logo-partners.webp" style="width:${VERT ? 760 : 700}px"></div>
-  <div id="o-cta" class="cap-sub" style="font-size:${VERT ? 38 : 34}px;margin-top:${VERT ? 48 : 36}px;color:#ffd9d3">Open your passport on your phone</div>`
+const outro = el('abs', stage, `left:0;width:${W}px;top:${VERT ? 215 : 118}px;text-align:center`)
+outro.innerHTML = `<div id="o-logo" class="pill" style="display:inline-block"><img src="assets/logo-partners.webp" style="width:${VERT ? 780 : 640}px"></div>
+  <div id="o-fs" class="neon" style="font-size:${VERT ? 400 : 270}px;line-height:1.05;white-space:nowrap;margin-top:${VERT ? 40 : 14}px">FS<span style="font-size:.55em;vertical-align:top;position:relative;top:.12em">2</span></div>
+  <div id="o-tag" class="cap-title" style="font-size:${VERT ? 64 : 54}px;margin-top:${VERT ? 30 : 16}px;font-style:normal">Stranger Stories<br>from the Other Side!</div>
+  <div id="o-date" class="cap-sub" style="font-size:${VERT ? 40 : 34}px;margin-top:${VERT ? 46 : 26}px;letter-spacing:.06em">Wednesday, 28 October 2026</div>
+  <div id="o-venue" class="cap-sub" style="font-size:${VERT ? 34 : 29}px;margin-top:8px;opacity:.8">14:00 – 17:30 WIB · Global Kampong ITS</div>
+  <div id="o-cta" class="cap-sub" style="font-size:${VERT ? 38 : 32}px;margin-top:${VERT ? 48 : 26}px;color:#ffd9d3">Open your passport on your phone</div>`
 const oFs = outro.querySelector('#o-fs'), oTag = outro.querySelector('#o-tag'), oDate = outro.querySelector('#o-date'), oVenue = outro.querySelector('#o-venue'), oLogo = outro.querySelector('#o-logo'), oCta = outro.querySelector('#o-cta')
 
 // full-frame fx
@@ -402,7 +402,7 @@ window.seek = async function (t) {
   const titleIn = t < 3.9
   title.style.display = titleIn ? 'block' : 'none'
   if (titleIn) {
-    const kk = prog(t, 0.9, 0.9, OUT)
+    const kk = prog(t, 0.35, 0.9, OUT)
     tKick.style.opacity = (kk * (1 - prog(t, 3.35, 0.4, IN))).toFixed(3)
     tKick.style.transform = `translateY(${(1 - kk) * 20}px)`
     titleLine(tF, t, HIT.title), titleLine(tS, t, HIT.title + 0.28), titleLine(t2, t, HIT.title + 0.56)
@@ -462,7 +462,7 @@ window.seek = async function (t) {
     oDate.style.opacity = dk.toFixed(3); oDate.style.transform = `translateY(${(1 - dk) * 20}px)`
     const vk = prog(t, 25.65, 0.6, OUT)
     oVenue.style.opacity = (vk * 0.8).toFixed(3)
-    const lk = prog(t, 26.2, 0.7, OUT)
+    const lk = prog(t, 23.55, 0.6, OUT)
     oLogo.style.opacity = lk.toFixed(3); oLogo.style.transform = `translateY(${(1 - lk) * 40}px)`
     const ck = prog(t, 27.2, 0.6, OUT)
     oCta.style.opacity = (ck * (0.75 + 0.25 * Math.sin(t * 4))).toFixed(3)

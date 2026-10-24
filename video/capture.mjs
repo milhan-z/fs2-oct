@@ -1,7 +1,7 @@
 // Captures real app screens (mock mode, 390×844 @3x) for the tutorial video, plus the screen rects
 // of the elements the video highlights. Usage: node video/capture.mjs [baseUrl]
 import { chromium } from '@playwright/test'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 
 const BASE = process.argv[2] ?? 'http://localhost:5173'
 const OUT = 'video/shots'
@@ -10,45 +10,33 @@ const rects = {}
 
 const browser = await chromium.launch()
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: false, hasTouch: true, permissions: ['camera'], colorScheme: 'dark' })
-// a drawn portrait as the "camera" so the polaroid shows a clean picture, not Chromium's test pattern
-await ctx.addInitScript(() => {
+// The "camera" shows a real portrait (video/private/alex-portrait.jpg, not committed) so the polaroid
+// looks like the real thing; the booth speaker gets a real photo too (rahmat-speaker.jpg).
+const dataUrl = (f) => `data:image/jpeg;base64,${readFileSync(f).toString('base64')}`
+const PORTRAIT = dataUrl('video/private/alex-portrait.jpg')
+const SPEAKERS = { B1: dataUrl('video/private/rahmat-speaker.jpg'), B2: dataUrl('video/private/tegar-speaker.jpg') }
+await ctx.addInitScript((src) => {
   navigator.mediaDevices.getUserMedia = async () => {
+    const img = new Image()
+    img.src = src
+    await img.decode()
     const c = document.createElement('canvas')
     c.width = 720
     c.height = 960
     const g = c.getContext('2d')
     const draw = (t) => {
-      const bg = g.createLinearGradient(0, 0, 0, 960)
-      bg.addColorStop(0, '#3a2a35')
-      bg.addColorStop(1, '#8a4a3c')
-      g.fillStyle = bg
-      g.fillRect(0, 0, 720, 960)
-      const glow = g.createRadialGradient(560, 200, 20, 560, 200, 520)
-      glow.addColorStop(0, 'rgba(255,190,120,.55)')
-      glow.addColorStop(1, 'rgba(255,190,120,0)')
-      g.fillStyle = glow
-      g.fillRect(0, 0, 720, 960)
-      g.fillStyle = '#1d1520'
-      g.beginPath()
-      g.ellipse(360, 1000, 330, 330, 0, Math.PI, 0)
-      g.fill()
-      g.fillStyle = '#e8c3a6'
-      g.beginPath()
-      g.ellipse(360, 430 + Math.sin(t / 900) * 4, 150, 190, 0, 0, Math.PI * 2)
-      g.fill()
-      g.fillStyle = '#2a1a22'
-      g.beginPath()
-      g.ellipse(360, 330 + Math.sin(t / 900) * 4, 160, 120, 0, Math.PI, 0)
-      g.fill()
-      g.fillStyle = '#e8c3a6'
-      g.fillRect(325, 600, 70, 80)
+      const z = 1.0 + 0.012 * Math.sin(t / 1500)
+      g.save()
+      g.translate(360, 480)
+      g.scale(z, z)
+      g.drawImage(img, -360, -480, 720, 960)
+      g.restore()
     }
     draw(0)
-    const s = c.captureStream(15)
     setInterval(() => draw(performance.now()), 66)
-    return s
+    return c.captureStream(15)
   }
-})
+}, PORTRAIT)
 const page = await ctx.newPage()
 const wait = (ms) => page.waitForTimeout(ms)
 const hide = () =>
@@ -84,7 +72,7 @@ await rect('nrp', page.getByLabel('NRP', { exact: true }))
 await rect('continue', page.getByRole('button', { name: 'Continue' }))
 await page.getByRole('button', { name: 'Continue' }).click()
 await wait(900)
-await page.getByLabel('Full name').fill('Alex Rivera')
+await page.getByLabel('Full name').fill('Audrey Alexandro')
 await page.getByLabel('Department').selectOption('Informatics')
 await page.getByLabel('4-digit PIN').fill('1234')
 await page.getByLabel('Repeat PIN').fill('1234')
@@ -107,7 +95,18 @@ if (page.url().includes('onboarding')) {
   await page.getByRole('button', { name: 'Start' }).click({ timeout: 8000 }).catch(() => {})
 }
 await page.waitForURL('**/map')
-await wait(2600)
+// real photos for the Korea (Rahmat Agussalim) and Taiwan (Tegar Anugrah Firdaus) speakers, names as in the seed;
+// only this browser copy of the mock data changes, never the app seed
+await page.evaluate((photos) => {
+  const db = JSON.parse(localStorage.getItem('fs2.mockdb'))
+  for (const sp of db.content.speakers) {
+    if (!photos[sp.boothId]) continue
+    Object.assign(sp, { foto: photos[sp.boothId], placeholder: false, cerita: 'Come say hi at the booth. Your stamp is waiting!' })
+  }
+  localStorage.setItem('fs2.mockdb', JSON.stringify(db))
+}, SPEAKERS)
+await page.reload()
+await wait(3200)
 await shot('s06-map')
 const pin = page.getByRole('button', { name: /Taiwan booth/ })
 await rect('pinTaiwan', pin)

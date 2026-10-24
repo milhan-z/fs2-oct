@@ -16,3 +16,6 @@ docs/audit/**/video/
 video/shots/
 video/data.js
 video/cues.js
+
+# personal photos used in the tutorial video (not committed)
+video/private/
