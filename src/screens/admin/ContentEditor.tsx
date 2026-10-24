@@ -1,9 +1,10 @@
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { api } from '../../data/api'
 import { useContent } from '../../app/providers'
 import type { Booth, Facility, Question, Speaker } from '../../data/types'
-import { CAM_BUILDING, LOUNGE_BOUNDS, WALLS_INNER, pinPath, viewBoxOf } from '../../map/geometry'
+import { LOUNGE_BOUNDS, PLAN, WALLS_INNER, pinPath, viewBoxOf, type Rect } from '../../map/geometry'
 import { StampImg } from '../../components/decor'
+import { PhotoCropDialog } from './PhotoCropDialog'
 
 /** Resizes an image in the browser, then uploads it (public content bucket / data URL in mock). */
 async function uploadImage(file: File, max = 480): Promise<string> {
@@ -93,10 +94,44 @@ function MapEditor({ booths, facilities, onSaved }: { booths: Booth[]; facilitie
   const svgRef = useRef<SVGSVGElement>(null)
   const [sel, setSel] = useState<Sel | null>(null)
   const [drag, setDrag] = useState<{ sel: Sel; x: number; y: number } | null>(null)
-  const [zoomLounge, setZoomLounge] = useState(true)
-  const view = zoomLounge ? { x: LOUNGE_BOUNDS.x - 300, y: LOUNGE_BOUNDS.y - 200, w: LOUNGE_BOUNDS.w + 600, h: LOUNGE_BOUNDS.h + 400 } : CAM_BUILDING
+  const [size, setSize] = useState({ w: 400, h: 533 })
+  // the visible part of the plan: centre + width in plan units (the height follows the panel's shape)
+  const [cam, setCam] = useState({ cx: LOUNGE_BOUNDS.x + LOUNGE_BOUNDS.w / 2, cy: LOUNGE_BOUNDS.y + LOUNGE_BOUNDS.h / 2, w: LOUNGE_BOUNDS.w + 600 })
+  const pointers = useRef(new Map<number, { x: number; y: number }>())
+  const gesture = useRef<{ kind: 'pan'; sx: number; sy: number; cx: number; cy: number; moved: boolean } | { kind: 'pinch'; d: number; w: number } | null>(null)
+  const moved = useRef(false)
 
-  const toSvg = (e: React.PointerEvent | React.MouseEvent) => {
+  useEffect(() => {
+    const el = svgRef.current
+    if (!el) return
+    const read = () => setSize({ w: el.clientWidth || 400, h: el.clientHeight || 533 })
+    read()
+    const ro = new ResizeObserver(read)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const camH = cam.w * (size.h / size.w)
+  const view: Rect = { x: cam.cx - cam.w / 2, y: cam.cy - camH / 2, w: cam.w, h: camH }
+  const upp = cam.w / size.w // plan units per screen pixel
+  const k = upp / 3.2 // markers keep the on-screen size they have in the Lounge view whatever the zoom
+
+  const clampCam = (c: typeof cam) => {
+    const w = Math.max(250, Math.min(2800, c.w))
+    return { w, cx: Math.max(-200, Math.min(PLAN.w + 200, c.cx)), cy: Math.max(-200, Math.min(PLAN.h + 200, c.cy)) }
+  }
+  const zoomAt = (factor: number, px?: { x: number; y: number }) =>
+    setCam((c) => {
+      const w = Math.max(250, Math.min(2800, c.w * factor))
+      const real = w / c.w
+      // keep the plan point under the cursor where it is
+      const p = px ?? { x: c.cx, y: c.cy }
+      return clampCam({ w, cx: p.x - (p.x - c.cx) * real, cy: p.y - (p.y - c.cy) * real })
+    })
+  const showLounge = () => setCam({ cx: LOUNGE_BOUNDS.x + LOUNGE_BOUNDS.w / 2, cy: LOUNGE_BOUNDS.y + LOUNGE_BOUNDS.h / 2, w: LOUNGE_BOUNDS.w + 600 })
+  const showBuilding = () => setCam({ cx: PLAN.w / 2, cy: PLAN.h / 2, w: (PLAN.h + 160) * (size.w / size.h) })
+
+  const toSvg = (e: { clientX: number; clientY: number }) => {
     const svg = svgRef.current!
     const pt = svg.createSVGPoint()
     pt.x = e.clientX
@@ -118,15 +153,62 @@ function MapEditor({ booths, facilities, onSaved }: { booths: Booth[]; facilitie
 
   const pos = (s: Sel, x: number | null, y: number | null) => (drag && drag.sel.id === s.id && drag.sel.kind === s.kind ? { x: drag.x, y: drag.y } : { x, y })
 
+  // drag the background to pan, pinch / wheel / buttons to zoom
+  const down = (e: React.PointerEvent) => {
+    svgRef.current?.setPointerCapture?.(e.pointerId)
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    moved.current = false
+    if (pointers.current.size === 2) {
+      const [a, b] = [...pointers.current.values()]
+      gesture.current = { kind: 'pinch', d: Math.hypot(a.x - b.x, a.y - b.y), w: cam.w }
+    } else if (pointers.current.size === 1) {
+      gesture.current = { kind: 'pan', sx: e.clientX, sy: e.clientY, cx: cam.cx, cy: cam.cy, moved: false }
+    }
+  }
+  const move = (e: React.PointerEvent) => {
+    if (drag) return setDrag({ ...drag, ...toSvg(e) })
+    if (!pointers.current.has(e.pointerId)) return
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    const g = gesture.current
+    if (!g) return
+    if (g.kind === 'pinch' && pointers.current.size === 2) {
+      const [a, b] = [...pointers.current.values()]
+      const d = Math.hypot(a.x - b.x, a.y - b.y)
+      if (d > 10) setCam((c) => clampCam({ ...c, w: g.w * (g.d / d) }))
+      moved.current = true
+    } else if (g.kind === 'pan') {
+      const dx = e.clientX - g.sx
+      const dy = e.clientY - g.sy
+      if (Math.hypot(dx, dy) > 4) moved.current = true
+      if (moved.current) setCam((c) => clampCam({ ...c, cx: g.cx - dx * upp, cy: g.cy - dy * upp }))
+    }
+  }
+  const up = (e: React.PointerEvent) => {
+    pointers.current.delete(e.pointerId)
+    if (pointers.current.size < 2 && gesture.current?.kind === 'pinch') gesture.current = null
+    if (pointers.current.size === 0) gesture.current = null
+    if (drag) {
+      commit(drag.sel, drag.x, drag.y)
+      setTimeout(() => setDrag(null), 0)
+    }
+  }
+
+  const pickBtn = 'min-h-9 min-w-9 rounded-lg border border-[#d5cabd] bg-white px-2 text-[15px] font-semibold'
+
   return (
     <div className={`${card} h-fit xl:sticky xl:top-5`}>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="text-[17px] font-bold">Map points</h2>
-        <button type="button" className="min-h-10 rounded-lg border border-[#d5cabd] px-3 text-[13px]" onClick={() => setZoomLounge((z) => !z)}>
-          {zoomLounge ? 'Whole building' : 'Zoom to Lounge'}
-        </button>
+        <div className="flex gap-1.5">
+          <button type="button" className="min-h-10 rounded-lg border border-[#d5cabd] px-3 text-[13px]" onClick={showLounge}>
+            Lounge
+          </button>
+          <button type="button" className="min-h-10 rounded-lg border border-[#d5cabd] px-3 text-[13px]" onClick={showBuilding}>
+            Whole building
+          </button>
+        </div>
       </div>
-      <p className="mt-1 text-[13px] text-[#6b6058]">Drag a point, or pick an item and click the map to place it.</p>
+      <p className="mt-1 text-[13px] text-[#6b6058]">Drag a point to move it, or pick an item below and click the map to place it. Drag the map to pan; scroll, pinch or use + / − to zoom.</p>
       <div className="mt-2 flex flex-wrap gap-1.5">
         {[...booths.map((b) => ({ kind: 'booth' as const, id: b.id, label: `${b.id} ${b.nama}` })), ...facilities.map((f) => ({ kind: 'facility' as const, id: f.id, label: `${f.label}${f.x == null ? ' (not placed)' : ''}` }))].map((it) => (
           <button
@@ -139,22 +221,32 @@ function MapEditor({ booths, facilities, onSaved }: { booths: Booth[]; facilitie
           </button>
         ))}
       </div>
-      <div className="panel-red mt-3 overflow-hidden rounded-xl">
+      {sel && <p className="mt-2 rounded-lg bg-[#fff7e0] px-3 py-1.5 text-[13px]">Click anywhere on the map to put “{sel.kind === 'booth' ? booths.find((b) => b.id === sel.id)?.nama : facilities.find((f) => f.id === sel.id)?.label}” there.</p>}
+      <div className="panel-red relative mt-3 overflow-hidden rounded-xl">
+        <div className="absolute top-2 right-2 z-10 flex flex-col gap-1.5">
+          <button type="button" className={pickBtn} aria-label="Zoom in" onClick={() => zoomAt(0.7)}>
+            +
+          </button>
+          <button type="button" className={pickBtn} aria-label="Zoom out" onClick={() => zoomAt(1 / 0.7)}>
+            −
+          </button>
+        </div>
         <svg
           ref={svgRef}
           viewBox={viewBoxOf(view)}
-          className="block aspect-[3/4] w-full touch-none select-none"
+          className="block aspect-[3/4] w-full cursor-grab touch-none select-none active:cursor-grabbing"
+          onPointerDown={down}
+          onPointerMove={move}
+          onPointerUp={up}
+          onPointerCancel={up}
+          onWheel={(e) => {
+            e.preventDefault()
+            zoomAt(Math.exp(e.deltaY * 0.0015), toSvg(e))
+          }}
           onClick={(e) => {
-            if (!sel || drag) return
+            if (!sel || drag || moved.current) return
             const p = toSvg(e)
             commit(sel, p.x, p.y)
-          }}
-          onPointerMove={(e) => drag && setDrag({ ...drag, ...toSvg(e) })}
-          onPointerUp={() => {
-            if (drag) {
-              commit(drag.sel, drag.x, drag.y)
-              setTimeout(() => setDrag(null), 0)
-            }
           }}
           role="application"
           aria-label="Map point editor"
@@ -168,6 +260,7 @@ function MapEditor({ booths, facilities, onSaved }: { booths: Booth[]; facilitie
             return (
               <g
                 key={b.id}
+                transform={`translate(${p.x ?? 0} ${p.y ?? 0}) scale(${k})`}
                 style={{ cursor: 'grab' }}
                 onPointerDown={(e) => {
                   e.stopPropagation()
@@ -176,8 +269,8 @@ function MapEditor({ booths, facilities, onSaved }: { booths: Booth[]; facilitie
                   setDrag({ sel: s, x: p.x!, y: p.y! })
                 }}
               >
-                <path d={pinPath(p.x!, p.y!)} fill={active ? '#F9B018' : '#D22B26'} stroke="#fff" strokeWidth="8" />
-                <text x={p.x!} y={p.y! - 30} textAnchor="middle" fontFamily="Anton" fontSize="44" fill="#fff">
+                <path d={pinPath(0, 0)} fill={active ? '#F9B018' : '#D22B26'} stroke="#fff" strokeWidth="8" />
+                <text y={-30} textAnchor="middle" fontFamily="Anton" fontSize="44" fill="#fff">
                   {b.id}
                 </text>
               </g>
@@ -192,15 +285,17 @@ function MapEditor({ booths, facilities, onSaved }: { booths: Booth[]; facilitie
               return (
                 <g
                   key={f.id}
+                  transform={`translate(${p.x ?? 0} ${p.y ?? 0}) scale(${k})`}
                   style={{ cursor: 'grab' }}
                   onPointerDown={(e) => {
                     e.stopPropagation()
+                    ;(e.target as Element).setPointerCapture?.(e.pointerId)
                     setSel(s)
                     setDrag({ sel: s, x: p.x!, y: p.y! })
                   }}
                 >
-                  <circle cx={p.x!} cy={p.y!} r="60" fill={active ? '#F9B018' : '#F4E8E2'} stroke="#0D2A4A" strokeWidth="8" />
-                  <text x={p.x!} y={p.y! + 110} textAnchor="middle" fontFamily="Poppins" fontWeight="700" fontSize="56" fill="#F9B018">
+                  <circle r="60" fill={active ? '#F9B018' : '#F4E8E2'} stroke="#0D2A4A" strokeWidth="8" />
+                  <text y="110" textAnchor="middle" fontFamily="Poppins" fontWeight="700" fontSize="56" fill="#F9B018">
                     {f.label}
                   </text>
                 </g>
@@ -296,13 +391,54 @@ function BoothCard({ booth, speakers, onSaved }: { booth: Booth; speakers: Speak
 function SpeakerForm({ speaker, onSaved }: { speaker: Speaker; onSaved: (m?: string) => void }) {
   const [s, setS] = useState(speaker)
   const dirty = JSON.stringify(s) !== JSON.stringify(speaker)
+  const [picked, setPicked] = useState<File | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
   return (
-    <div className="mt-3 grid gap-3 rounded-xl bg-[#faf8f4] p-3 sm:grid-cols-[80px_1fr]">
-      <label className="flex cursor-pointer flex-col items-center gap-1 text-[12px]">
-        <div className="aspect-[4/5] w-20 overflow-hidden rounded bg-[#3a3f4a]">{s.foto && <img src={s.foto} alt="" className="h-full w-full object-cover" />}</div>
-        Replace photo
-        <input type="file" accept="image/*" className="sr-only" onChange={async (e) => e.target.files?.[0] && setS({ ...s, foto: await uploadImage(e.target.files[0]) })} />
-      </label>
+    <div className="mt-3 grid gap-3 rounded-xl bg-[#faf8f4] p-3 sm:grid-cols-[120px_1fr]">
+      <div className="flex flex-col items-center gap-1 text-[12px]">
+        <div className="aspect-[4/3.2] w-full overflow-hidden rounded bg-[#3a3f4a]">{s.foto && <img src={s.foto} alt="" className="h-full w-full object-cover" />}</div>
+        <label className="flex min-h-10 cursor-pointer items-center rounded-lg border border-[#d5cabd] bg-white px-3 font-semibold">
+          {busy ? 'Uploading…' : s.foto ? 'Replace photo' : 'Add photo'}
+          <input
+            type="file"
+            accept="image/*,.heic,.heif"
+            className="sr-only"
+            disabled={busy}
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              e.target.value = ''
+              if (f) {
+                setPicked(f)
+                setNote(null)
+              }
+            }}
+          />
+        </label>
+        {note && (
+          <span className={note.ok ? 'text-[#256b3a]' : 'text-[#9b2c2c]'} role="status">
+            {note.text}
+          </span>
+        )}
+      </div>
+      {picked && (
+        <PhotoCropDialog
+          file={picked}
+          onCancel={() => setPicked(null)}
+          onDone={async (blob) => {
+            setPicked(null)
+            setBusy(true)
+            try {
+              const url = await api.uploadContentImage(blob, 'jpg')
+              setS((p) => ({ ...p, foto: url }))
+              setNote({ ok: true, text: 'Photo uploaded. Press Save speaker to keep it.' })
+            } catch (x) {
+              setNote({ ok: false, text: (x as Error).message || 'Upload failed. Try again.' })
+            }
+            setBusy(false)
+          }}
+        />
+      )}
       <div className="grid gap-2 sm:grid-cols-3">
         <Field label="Name">
           <input className="field-paper" value={s.nama} onChange={(e) => setS({ ...s, nama: e.target.value })} />
