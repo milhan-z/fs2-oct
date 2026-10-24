@@ -44,7 +44,9 @@ export function Guide() {
         <Folio left="Guide" className="flex-1" />
       </div>
 
-      <h1 className="page-title mt-5">How your passport works</h1>
+      <LogoStrip className="mx-auto mt-4 w-full max-w-[320px]" />
+
+      <h1 className="page-title mt-6">How your passport works</h1>
 
       <section className="mt-5" aria-label="Video tutorial">
         <div className="relative mx-auto aspect-[9/16] w-full max-w-[240px] overflow-hidden rounded-[4px] bg-night-0 shadow-[var(--shadow-contact)]">
@@ -135,7 +137,6 @@ export function Guide() {
         )}
       </div>
 
-      <LogoStrip className="mt-10 w-full max-w-[300px]" />
     </div>
   )
 }
