@@ -18,6 +18,10 @@ interface StoredStaff extends StaffSession {
   token: string
 }
 
+/** Answers to the requests index.html started while the bundle was still downloading (see vite.config.ts). */
+type Early = { t: number; tok: string | null; content?: Promise<string>; state?: Promise<string> }
+const earlyBox = (): Early | undefined => (window as unknown as { __fs2early?: Early }).__fs2early
+
 const changed = () => window.dispatchEvent(new Event('fs2-mock-change'))
 
 function readStaff(slug: string): StoredStaff | null {
@@ -144,9 +148,29 @@ export function supabaseAdapter(): Api {
     return data
   }
 
+  // The passport state that sign-in / registration / PIN reset already answered with: the next getMyState() uses it
+  // instead of a second round trip.
+  let handoff: { at: number; st: MyState } | null = null
+  const keepState = (st: MyState | undefined) => {
+    handoff = st ? { at: Date.now(), st } : null
+  }
+
+  /** The early answer, once and only while it is fresh (and, for the passport state, for the same session). */
+  async function takeEarly<T>(name: 'content' | 'state'): Promise<T | null> {
+    const e = earlyBox()
+    const p = e?.[name]
+    if (!e || !p || Date.now() - e.t > 20_000 || (name === 'state' && e.tok !== pToken())) return null
+    delete e[name]
+    try {
+      return JSON.parse(await p) as T
+    } catch {
+      return null // failed early (offline, expired session): the normal request reports the real error
+    }
+  }
+
   let contentCache: Content | null = null
   const getContent = async (): Promise<Content> => {
-    const c = await rpc<Omit<Content, 'departemen'>>('get_content')
+    const c = (await takeEarly<Omit<Content, 'departemen'>>('content')) ?? (await rpc<Omit<Content, 'departemen'>>('get_content'))
     contentCache = { ...c, departemen: DEPARTEMEN_ITS }
     return contentCache
   }
@@ -160,21 +184,23 @@ export function supabaseAdapter(): Api {
     },
 
     async login(nrp, pin) {
-      const r = unwrap(await rpc<{ ok: boolean; token: string; photo?: string | null }>('participant_login', { p_nrp: nrp.trim(), p_pin: pin }))
+      const r = unwrap(await rpc<{ ok: boolean; token: string; photo?: string | null; state?: MyState }>('participant_login', { p_nrp: nrp.trim(), p_pin: pin }))
       localStorage.setItem(SESSION_P, r.token)
+      keepState(r.state)
       // the photo URL is fetched while the passport state loads, not after it
       if (r.photo) resolvePhotoInBackground(r.token, r.photo)
     },
 
     async setPin(nrp, pin) {
-      const r = unwrap(await rpc<{ ok: boolean; token: string; photo?: string | null }>('participant_set_pin', { p_nrp: nrp.trim(), p_pin: pin }))
+      const r = unwrap(await rpc<{ ok: boolean; token: string; photo?: string | null; state?: MyState }>('participant_set_pin', { p_nrp: nrp.trim(), p_pin: pin }))
       localStorage.setItem(SESSION_P, r.token)
+      keepState(r.state)
       if (r.photo) resolvePhotoInBackground(r.token, r.photo)
     },
 
     async register(input) {
       const r = unwrap(
-        await rpc<{ ok: boolean; token: string }>('participant_register', {
+        await rpc<{ ok: boolean; token: string; state?: MyState }>('participant_register', {
           p_nrp: input.nrp.trim(),
           p_nama: input.nama,
           p_departemen: input.departemen,
@@ -183,13 +209,16 @@ export function supabaseAdapter(): Api {
         }),
       )
       localStorage.setItem(SESSION_P, r.token)
+      keepState(r.state)
     },
 
     hasSession: () => !!localStorage.getItem(SESSION_P),
     logout: () => localStorage.removeItem(SESSION_P),
 
     async getMyState() {
-      const st = await rpc<MyState>('get_my_state', { p_token: pToken() })
+      const given = handoff && Date.now() - handoff.at < 15_000 ? handoff.st : null
+      handoff = null
+      const st = given ?? (await takeEarly<MyState>('state')) ?? (await rpc<MyState>('get_my_state', { p_token: pToken() }))
       const path = st.participant.photo
       if (path) {
         // The state must not wait for the signed photo URL (a second round trip). Use the cached URL if there is

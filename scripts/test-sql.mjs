@@ -69,6 +69,7 @@ ok(!JSON.stringify(content).includes('admin_password_hash') && !JSON.stringify(c
 ok((await call('check_nrp', ['5025240028'])) === false, 'check_nrp false for new NRP')
 const reg = await call('participant_register', ['5025240028', 'Peserta Demo', 'Teknik Informatika', '2024', '1234'])
 ok(reg.ok && reg.token.length === 64, 'register returns session token')
+ok(reg.state?.participant?.nama === 'Peserta Demo' && reg.state.qrToken, 'register also returns the passport state')
 await expectErr('participant_register', ['5025240028', 'X Y Z', 'TI', '2024', '1234'], 'exists', 'duplicate NRP rejected')
 const pt = reg.token
 const auth = await one(`select pin_hash from public.participant_auth limit 1`)
@@ -87,6 +88,7 @@ ok(!r6.ok && r6.error === 'locked', 'locked after 5 failures even with correct P
 await db.exec(`update public.participant_auth set locked_until = null`)
 const good = await call('participant_login', ['5025240028', '1234'])
 ok(good.ok, 'login works after lock expires')
+ok(good.state?.participant?.id === (await call('get_my_state', [good.token])).participant.id, 'login state equals get_my_state')
 
 let st = await call('get_my_state', [pt])
 ok(st.participant.nrpMasked === '••••0028' && st.visits.length === 0 && st.qrToken.length === 36, 'get_my_state')
