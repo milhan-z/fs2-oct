@@ -5,6 +5,7 @@ import { api } from '../../data/api'
 import { useContent } from '../../app/providers'
 import { useParticipant } from '../../app/participant'
 import { ErrorText, Spinner } from '../../components/ui'
+import { haptic } from '../../app/sound'
 import { InkIcon } from '../../booklet/icons'
 import { DocLabel, Folio, MRZ, PageNo } from '../../booklet/print'
 
@@ -42,6 +43,7 @@ export function Login() {
   const done = async () => {
     const st = await api.getMyState()
     setState(st)
+    haptic.success()
     nav(st.participant.photo ? '/map' : '/photo', { replace: true })
   }
 
@@ -146,7 +148,7 @@ export function Login() {
           {step === 'nrp' && (
             <form onSubmit={submitNrp} className="mt-8 flex flex-1 flex-col" noValidate>
               <DocLabel htmlFor="nrp">NRP</DocLabel>
-              <input id="nrp" className="field-row font-mono tracking-[0.12em]" inputMode="numeric" autoComplete="username" placeholder="e.g. 5025240028" value={nrp} onChange={(e) => setNrp(e.target.value.replace(/\D/g, ''))} />
+              <input id="nrp" enterKeyHint="go" className="field-row font-mono tracking-[0.12em]" inputMode="numeric" autoComplete="username" placeholder="e.g. 5025240028" value={nrp} onChange={(e) => setNrp(e.target.value.replace(/\D/g, ''))} />
               <div className="mt-2">
                 <ErrorText onPaper>{err}</ErrorText>
               </div>
@@ -157,7 +159,7 @@ export function Login() {
           {step === 'pin' && (
             <form onSubmit={submitPin} className="mt-8 flex flex-1 flex-col" noValidate>
               <DocLabel htmlFor="pin">4-digit PIN</DocLabel>
-              <input id="pin" className="field-row w-40 font-mono tracking-[0.6em]" {...pinProps} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} autoFocus />
+              <input id="pin" enterKeyHint="go" className="field-row w-40 font-mono tracking-[0.6em]" {...pinProps} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} autoFocus />
               <div className="mt-2">
                 <ErrorText onPaper>{err}</ErrorText>
               </div>
@@ -171,11 +173,11 @@ export function Login() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <DocLabel htmlFor="n-pin">New 4-digit PIN</DocLabel>
-                  <input id="n-pin" className="field-row font-mono tracking-[0.5em]" {...pinProps} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} autoFocus />
+                  <input id="n-pin" enterKeyHint="next" className="field-row font-mono tracking-[0.5em]" {...pinProps} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} autoFocus />
                 </div>
                 <div>
                   <DocLabel htmlFor="n-pin2">Repeat PIN</DocLabel>
-                  <input id="n-pin2" className="field-row font-mono tracking-[0.5em]" {...pinProps} value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ''))} />
+                  <input id="n-pin2" enterKeyHint="go" className="field-row font-mono tracking-[0.5em]" {...pinProps} value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ''))} />
                 </div>
               </div>
               <div className="mt-2">
@@ -191,11 +193,11 @@ export function Login() {
               <div className="grid gap-5">
                 <div>
                   <DocLabel htmlFor="r-nrp">NRP</DocLabel>
-                  <input id="r-nrp" className="field-row font-mono tracking-[0.12em]" inputMode="numeric" value={nrp} onChange={(e) => setNrp(e.target.value.replace(/\D/g, ''))} />
+                  <input id="r-nrp" enterKeyHint="next" className="field-row font-mono tracking-[0.12em]" inputMode="numeric" value={nrp} onChange={(e) => setNrp(e.target.value.replace(/\D/g, ''))} />
                 </div>
                 <div>
                   <DocLabel htmlFor="r-nama">Full name</DocLabel>
-                  <input id="r-nama" className="field-row" autoComplete="name" value={nama} onChange={(e) => setNama(e.target.value)} autoFocus />
+                  <input id="r-nama" enterKeyHint="next" className="field-row" autoComplete="name" value={nama} onChange={(e) => setNama(e.target.value)} autoFocus />
                 </div>
                 <div className="grid grid-cols-[1fr_96px] gap-4">
                   <div className="min-w-0">
@@ -227,11 +229,11 @@ export function Login() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <DocLabel htmlFor="r-pin">4-digit PIN</DocLabel>
-                    <input id="r-pin" className="field-row font-mono tracking-[0.5em]" {...pinProps} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
+                    <input id="r-pin" enterKeyHint="next" className="field-row font-mono tracking-[0.5em]" {...pinProps} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
                   </div>
                   <div>
                     <DocLabel htmlFor="r-pin2">Repeat PIN</DocLabel>
-                    <input id="r-pin2" className="field-row font-mono tracking-[0.5em]" {...pinProps} value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ''))} />
+                    <input id="r-pin2" enterKeyHint="go" className="field-row font-mono tracking-[0.5em]" {...pinProps} value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ''))} />
                   </div>
                 </div>
               </div>

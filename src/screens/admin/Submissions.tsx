@@ -4,7 +4,7 @@ import { useLive } from '../../app/useAsync'
 import { useContent } from '../../app/providers'
 import type { SubmissionStatus } from '../../data/types'
 import { fmtTime } from '../../data/time'
-import { ErrorText, Spinner } from '../../components/ui'
+import { Loading, ErrorText, Spinner } from '../../components/ui'
 
 const TABS: [SubmissionStatus, string][] = [
   ['submitted', 'Waiting'],
@@ -81,7 +81,7 @@ function Detail({ pid, onBack, onChange }: { pid: string; onBack: () => void; on
   useEffect(() => {
     setNote(d.data?.submission?.reviewerNote ?? '')
   }, [d.data?.submission?.reviewerNote])
-  if (!d.data || !content) return <div className="p-8">Loading…</div>
+  if (!d.data || !content) return <Loading dark={false} />
   const p = d.data
   const sub = p.submission
   const booths = [...content.booths].sort((a, b) => a.sort - b.sort)

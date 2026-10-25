@@ -13,6 +13,7 @@ import { Icon } from '../../components/decor'
 import { EASE_OUT } from '../../motion/presets'
 import { vibrate } from '../../app/sound'
 import { onBackground, releaseVideo } from '../../app/camera'
+import { CameraPrimer, cameraNeedsPrimer, describeCameraError, markCameraPrimerSeen } from '../../components/CameraPrimer'
 
 /** S1 — staff PIN (shared or booth), then S2 scanner / S3 history. Runners switch booths freely. */
 export default function StaffBooth() {
@@ -116,6 +117,18 @@ function Scanner({ slug, session, onLogout }: { slug: string; session: StaffSess
   const [busy, setBusy] = useState(false)
   const [manual, setManual] = useState(false)
   const [camState, setCamState] = useState<'starting' | 'on' | 'error'>('starting')
+  const [camMsg, setCamMsg] = useState('')
+  const [camTry, setCamTry] = useState(0)
+  // 'primer' = the explanation shows first (once per device); the scanner starts only after Continue
+  const [camGate, setCamGate] = useState<'checking' | 'primer' | 'go'>('checking')
+  useEffect(() => {
+    if (tab !== 'scan') return
+    let live = true
+    cameraNeedsPrimer().then((need) => live && setCamGate(need ? 'primer' : 'go'))
+    return () => {
+      live = false
+    }
+  }, [tab])
   const [, tick] = useState(0)
   const videoRef = useRef<HTMLVideoElement>(null)
   const lastSeen = useRef(new Map<string, number>())
@@ -178,12 +191,13 @@ function Scanner({ slug, session, onLogout }: { slug: string; session: StaffSess
   // left, the page is hidden (home screen, another app, locked phone) or the screen closes, and back on when visible.
   useEffect(() => {
     const video = videoRef.current
-    if (tab !== 'scan' || !video) return
+    if (tab !== 'scan' || !video || camGate !== 'go') return
     let scanner: QrScanner | null = null
     let alive = true
     const turnOn = () => {
       if (!alive || scanner) return
       setCamState('starting')
+      setCamMsg('')
       const s = new QrScanner(video, (res) => onToken(res.data), {
         preferredCamera: 'environment',
         maxScansPerSecond: 8,
@@ -194,7 +208,12 @@ function Scanner({ slug, session, onLogout }: { slug: string; session: StaffSess
       scanner = s
       s.start()
         .then(() => alive && scanner === s && setCamState('on'))
-        .catch(() => alive && setCamState('error'))
+        .catch((e) => {
+          if (!alive) return
+          scanner = null
+          setCamState('error')
+          setCamMsg(describeCameraError(e))
+        })
     }
     const turnOff = () => {
       const s = scanner
@@ -212,7 +231,7 @@ function Scanner({ slug, session, onLogout }: { slug: string; session: StaffSess
       unsub()
       turnOff()
     }
-  }, [tab, onToken])
+  }, [tab, onToken, camGate, camTry])
 
   const phase = content ? sessionPhase(content.settings.sessionStart, content.settings.sessionEnd) : 'open'
   const open = !!content && (content.settings.simulationMode || phase === 'open')
@@ -266,11 +285,29 @@ function Scanner({ slug, session, onLogout }: { slug: string; session: StaffSess
 
       {tab === 'scan' ? (
         <>
+          {camGate === 'primer' && (
+            <CameraPrimer
+              title="Scan visitors’ QR codes"
+              body="The booth scanner uses the back camera to read each passport QR. Nothing is recorded, and it switches off when you leave this tab."
+              onContinue={() => {
+                markCameraPrimerSeen()
+                setCamGate('go')
+              }}
+            />
+          )}
           <div className="relative mt-3 overflow-hidden rounded-[22px] bg-[#1b1f27]">
             <video ref={videoRef} className="aspect-[4/3] w-full object-cover" muted playsInline aria-label="Scanner camera" />
             <p className={`absolute top-3 left-4 text-[14px] font-bold ${camState === 'on' ? 'text-[#4ade80]' : 'text-yellow'}`}>
               ● {camState === 'on' ? 'Camera on · keep scanning' : camState === 'starting' ? 'Starting camera…' : 'Camera unavailable — use manual entry'}
             </p>
+            {camState === 'error' && (
+              <div className="absolute inset-x-4 top-1/2 flex -translate-y-1/2 flex-col items-center gap-2 text-center">
+                <p className="text-[13px] leading-snug text-cream/90">{camMsg}</p>
+                <button type="button" className="btn btn-cream min-h-11" onClick={() => setCamTry((n) => n + 1)}>
+                  Try again
+                </button>
+              </div>
+            )}
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <motion.div ref={frameScope} className="aspect-square w-[46%] rounded-[18px] border-[5px] border-[#4ade80] shadow-[0_0_0_9999px_rgba(0,0,0,0.25)]" />
             </div>

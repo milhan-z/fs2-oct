@@ -3,7 +3,7 @@ import { NavLink, Route, Routes } from 'react-router'
 import { api, isMock } from '../../data/api'
 import { useLive } from '../../app/useAsync'
 import { useContent } from '../../app/providers'
-import { ErrorText, Spinner } from '../../components/ui'
+import { Loading, ErrorText, Spinner } from '../../components/ui'
 import { fmtTime, isoToLocalInput, localInputToIso, nowMs, sessionPhase } from '../../data/time'
 import { Submissions } from './Submissions'
 import { Participants } from './Participants'
@@ -105,7 +105,7 @@ function AdminShell({ onLogout }: { onLogout: () => void }) {
 
 function Summary({ data }: { data: Awaited<ReturnType<typeof api.adminDashboard>> | null }) {
   const { content } = useContent()
-  if (!data || !content) return <div className="p-8">Loading…</div>
+  if (!data || !content) return <Loading dark={false} />
   const max = Math.max(1, ...data.perBooth.map((b) => b.count))
   const phase = sessionPhase(content.settings.sessionStart, content.settings.sessionEnd)
   const cards = [

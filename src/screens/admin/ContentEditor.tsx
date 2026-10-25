@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { api } from '../../data/api'
+import { Loading } from '../../components/ui'
 import { useContent } from '../../app/providers'
 import type { Booth, Facility, Question, Speaker } from '../../data/types'
 import { LOUNGE_BOUNDS, PLAN, WALLS_INNER, pinPath, viewBoxOf, type Rect } from '../../map/geometry'
@@ -26,7 +27,7 @@ const lbl = 'text-[13px] font-bold text-[#4a4038]'
 export function ContentEditor() {
   const { content, reload } = useContent()
   const [saved, setSaved] = useState('')
-  if (!content) return <div className="p-8">Loading…</div>
+  if (!content) return <Loading dark={false} />
   const done = (m = 'Saved') => {
     reload()
     setSaved(m)

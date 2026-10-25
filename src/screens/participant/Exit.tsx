@@ -8,7 +8,7 @@ import { ErrorText, Spinner } from '../../components/ui'
 import { api } from '../../data/api'
 import type { Answer, Question } from '../../data/types'
 import { fmtDeadline } from '../../data/time'
-import { sfx, vibrate } from '../../app/sound'
+import { haptic, sfx, vibrate } from '../../app/sound'
 import { InkIcon } from '../../booklet/icons'
 import { ClippedSlip, Folio, PageNo, PageSkeleton } from '../../booklet/print'
 
@@ -273,6 +273,7 @@ function FeedbackStepper({
                         role="radio"
                         aria-checked={on}
                         onClick={() => {
+                          haptic.tick()
                           setAnswer(q.id, { nilaiInt: v })
                           clearTimeout(advance.current)
                           if (step < n - 1) advance.current = window.setTimeout(() => go(step + 1), reduce ? 0 : 280)

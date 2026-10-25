@@ -76,11 +76,15 @@ export function Spinner({ className = '' }: { className?: string }) {
   return <span className={`inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent ${className}`} aria-hidden="true" />
 }
 
-export function Loading() {
+/** Waiting text with a soft highlight sweeping across it; `dark` for text on the night background. */
+export function ShimmerText({ children, dark = false, className = '' }: { children: ReactNode; dark?: boolean; className?: string }) {
+  return <span className={`shimmer-text ${dark ? 'on-dark' : ''} ${className}`}>{children}</span>
+}
+
+export function Loading({ dark = true }: { dark?: boolean }) {
   return (
-    <div className="flex flex-1 items-center justify-center p-10 text-muted" role="status">
-      <Spinner />
-      <span className="sr-only">Loading…</span>
+    <div className="flex flex-1 items-center justify-center p-10 text-[15px] font-semibold" role="status">
+      <ShimmerText dark={dark}>Loading…</ShimmerText>
     </div>
   )
 }

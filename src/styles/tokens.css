@@ -93,6 +93,7 @@
   }
   body {
     margin: 0;
+    padding-bottom: var(--kb, 0px); /* room for the phone keyboard on plain scrolling pages (staff, admin) */
     font-family: var(--font-sans);
     color: var(--color-cream);
     -webkit-font-smoothing: antialiased;
@@ -138,6 +139,27 @@
   .fade-in { animation: fs2-fade-in 0.28s ease-out both; }
   @keyframes fs2-fade-in { from { opacity: 0; } to { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
+  /* waiting text: a soft highlight sweeps across the words (instead of a spinner). Paper = dark ink, .on-dark = cream. */
+  .shimmer-text {
+    --shimmer-base: color-mix(in srgb, var(--color-ink) 55%, transparent);
+    --shimmer-hl: var(--color-ink);
+    color: transparent;
+    background-image: linear-gradient(100deg, transparent 38%, var(--shimmer-hl) 50%, transparent 62%), linear-gradient(var(--shimmer-base), var(--shimmer-base));
+    background-size: 260% 100%, 100% 100%;
+    background-repeat: no-repeat;
+    background-position: 130% 0, 0 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: fs2-shimmer 1.7s ease-in-out infinite;
+  }
+  .shimmer-text.on-dark {
+    --shimmer-base: color-mix(in srgb, var(--color-cream) 50%, transparent);
+    --shimmer-hl: #fff;
+  }
+  @keyframes fs2-shimmer { to { background-position: -30% 0, 0 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .shimmer-text { animation: none; color: var(--shimmer-base); background-image: none; }
+  }
 
   .mat-paper {
     background-color: var(--color-paper);
@@ -212,7 +234,7 @@
     outline: none;
     background: rgba(255, 252, 244, 0.7);
     border-bottom-color: var(--color-ink);
-    box-shadow: 0 0 0 1.5px var(--color-ink);
+    box-shadow: 0 0 0 1.5px var(--color-ink), 0 0 16px rgba(179, 38, 30, 0.16);
   }
   select.field-row {
     appearance: none;

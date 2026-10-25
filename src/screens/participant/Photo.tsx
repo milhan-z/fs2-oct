@@ -4,10 +4,11 @@ import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router'
 import { api, isMock } from '../../data/api'
 import { useParticipant, useSignOut } from '../../app/participant'
-import { ErrorText } from '../../components/ui'
+import { ErrorText, ShimmerText } from '../../components/ui'
 import { sfx, vibrate } from '../../app/sound'
 import { onBackground, releaseVideo } from '../../app/camera'
 import { InkIcon } from '../../booklet/icons'
+import { CameraPrimer, cameraNeedsPrimer, describeCameraError, markCameraPrimerSeen } from '../../components/CameraPrimer'
 import { DocLabel, Folio, MRZ, PageNo, PageSkeleton } from '../../booklet/print'
 
 /** The map intro is shown once per passport (not once per phone), so a new or re-created account sees it again. */
@@ -59,15 +60,22 @@ export function Photo() {
   const signOut = useSignOut()
   const boxRef = useRef<HTMLButtonElement>(null)
   const [camOpen, setCamOpen] = useState(false)
+  const [primer, setPrimer] = useState(false)
   const [pasted, setPasted] = useState<Shot | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
+  // the first time, a short explanation comes before the browser asks for the camera
+  const openCam = useCallback(async () => {
+    if (await cameraNeedsPrimer()) setPrimer(true)
+    else setCamOpen(true)
+  }, [])
+
   // the camera pops out on its own once the page has settled
   useEffect(() => {
-    const t = setTimeout(() => setCamOpen(true), reduce ? 0 : 650)
+    const t = setTimeout(openCam, reduce ? 0 : 650)
     return () => clearTimeout(t)
-  }, [reduce])
+  }, [reduce, openCam])
 
   const save = async (shot: Shot) => {
     setBusy(true)
@@ -110,7 +118,7 @@ export function Photo() {
           <motion.button
             ref={boxRef}
             type="button"
-            onClick={() => !busy && setCamOpen(true)}
+            onClick={() => !busy && openCam()}
             disabled={busy}
             aria-label={photo ? 'Retake attendance photo' : 'Open camera'}
             className="relative block aspect-[3/4] w-full overflow-hidden bg-[#2a2f37]"
@@ -166,7 +174,7 @@ export function Photo() {
       <MRZ name={p.nama} last4={p.nrpLast4} reveal={!!pasted} className="mt-5" />
 
       <p className="mt-5 text-[14px] text-ink/70">
-        {busy ? 'Pasting your photo into the passport…' : photo ? 'Photo in place. Tap it to retake.' : 'The camera opens as a polaroid — keep your face clearly visible.'}
+        {busy ? <ShimmerText>Pasting your photo into the passport…</ShimmerText> : photo ? 'Photo in place. Tap it to retake.' : 'The camera opens as a polaroid — keep your face clearly visible.'}
       </p>
       <p className="mt-1 text-[12px] text-ink/55">The photo is used as proof of attendance for FS² and is only seen by the committee.</p>
       <div className="mt-1">
@@ -184,7 +192,7 @@ export function Photo() {
             Try again
           </button>
         ) : (
-          <motion.button type="button" whileTap={{ scale: 0.98 }} transition={{ duration: 0.06 }} className="btn btn-primary w-full" onClick={() => setCamOpen(true)}>
+          <motion.button type="button" whileTap={{ scale: 0.98 }} transition={{ duration: 0.06 }} className="btn btn-primary w-full" onClick={openCam}>
             {photo ? 'Retake photo' : 'Open camera'}
           </motion.button>
         )}
@@ -196,6 +204,18 @@ export function Photo() {
       )}
       <PageNo n={2} />
 
+      {primer && (
+        <CameraPrimer
+          title="Let’s take your passport photo"
+          body="We need your camera for one portrait that goes on your passport. It is only used here and switches off right after."
+          onContinue={() => {
+            markCameraPrimerSeen()
+            setPrimer(false)
+            setCamOpen(true)
+          }}
+          onCancel={() => setPrimer(false)}
+        />
+      )}
       {createPortal(<AnimatePresence>{camOpen && <PolaroidCamera key="cam" boxRef={boxRef} name={p.nama} onClose={() => setCamOpen(false)} onUse={onPasted} />}</AnimatePresence>, document.body)}
     </div>
   )
@@ -253,8 +273,8 @@ function PolaroidCamera({ boxRef, name, onClose, onUse }: { boxRef: React.RefObj
         videoRef.current.srcObject = s
         await videoRef.current.play().catch(() => {})
       }
-    } catch {
-      setCamError('Camera unavailable. Allow camera access, or take a photo with your phone camera.')
+    } catch (e) {
+      if (alive.current && mine === run.current) setCamError(describeCameraError(e))
     }
   }, [facing])
 
@@ -392,6 +412,9 @@ function PolaroidCamera({ boxRef, name, onClose, onUse }: { boxRef: React.RefObj
                 Take photo
                 <input type="file" accept="image/*" capture="user" className="sr-only" onChange={(e) => acceptFile(e.target.files?.[0])} />
               </label>
+              <button type="button" className="min-h-11 text-[14px] text-cream/85 underline underline-offset-4" onClick={start}>
+                Try the camera again
+              </button>
               {isMock && (
                 <button type="button" className="min-h-11 text-[14px] text-cream/85 underline underline-offset-4" onClick={async () => acceptFile(await samplePhoto())}>
                   Use sample photo

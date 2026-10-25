@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'motion/react'
+import { haptic } from '../app/sound'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useParticipant } from '../app/participant'
@@ -46,7 +47,11 @@ export function CoachTour() {
     if (pid) localStorage.setItem(tourKey(pid), 'done')
     setOpen(false)
   }
-  const next = () => (i >= STEPS.length - 1 ? close() : setI(i + 1))
+  const next = () => {
+    haptic.tick()
+    if (i >= STEPS.length - 1) close()
+    else setI(i + 1)
+  }
 
   // follow the target of the current step (it may still be animating in, or the window may resize)
   useEffect(() => {

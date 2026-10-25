@@ -225,7 +225,7 @@ export function Booklet() {
       {/* back turn: the previous leaf (live) swings back over a snapshot of the page being left */}
       {turn?.dir === -1 && <StaticSnapshot turn={turn} />}
       <LeafWrap angle={backAngle}>
-        <div ref={pageRef} className={`mat-paper absolute inset-0 ${book ? '' : 'rounded-none'} overflow-x-hidden overflow-y-auto overscroll-contain [backface-visibility:hidden]`} data-page={displayKey}>
+        <div ref={pageRef} className={`mat-paper absolute inset-0 ${book ? '' : 'rounded-none'} overflow-x-hidden overflow-y-auto overscroll-contain [backface-visibility:hidden]`} data-page={displayKey} style={{ paddingBottom: 'var(--kb, 0px)' }}>
           {page}
         </div>
       </LeafWrap>

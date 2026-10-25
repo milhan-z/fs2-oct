@@ -63,3 +63,11 @@ export function vibrate(ms: number | number[]) {
     /* unsupported */
   }
 }
+
+/** Named haptic patterns (Android Chrome; iPhone Safari has no vibration API, so it stays silent there). */
+export const haptic = {
+  tick: () => vibrate(8), // a choice was made: scale answer, tour step
+  tap: () => vibrate(15), // something was placed or taken
+  success: () => vibrate([18, 45, 30]), // signed in, saved
+  warn: () => vibrate([40, 40, 40]),
+}
