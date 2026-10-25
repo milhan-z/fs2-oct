@@ -1,25 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router'
-import { Icon } from './decor'
-
-export function BackHeader({ kicker, to, onBack, right }: { kicker: string; to?: string; onBack?: () => void; right?: ReactNode }) {
-  const nav = useNavigate()
-  return (
-    <div className="flex items-center gap-2 px-3 pt-4">
-      <button
-        type="button"
-        aria-label="Back"
-        onClick={() => (onBack ? onBack() : to ? nav(to) : nav(-1))}
-        className="flex h-11 w-11 items-center justify-center rounded-full text-cream hover:bg-white/5"
-      >
-        <Icon.Back className="h-6 w-6" />
-      </button>
-      <div className="kicker flex-1">{kicker}</div>
-      {right}
-    </div>
-  )
-}
 
 export function ErrorText({ children, onPaper = false }: { children: ReactNode; onPaper?: boolean }) {
   return (

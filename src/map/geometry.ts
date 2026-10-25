@@ -40,11 +40,3 @@ export const WALLS_INNER = wallsRaw
 
 export const pinPath = (x: number, y: number) =>
   `M${x} ${y + 90} c-52 -68 -75 -98 -75 -135 a75 75 0 0 1 150 0 c0 37 -23 67 -75 135z`
-
-/** "South Korea" → KOREA, "Germany" → GERMANY, "Booth 4" → 4 */
-export function pinLabel(nama: string, sort: number): string {
-  const words = nama.trim().split(/\s+/)
-  if (words[0].toLowerCase() === 'booth') return String(sort)
-  const last = words[words.length - 1].toUpperCase()
-  return last.length > 8 ? String(sort) : last
-}

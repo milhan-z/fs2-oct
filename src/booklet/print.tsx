@@ -42,11 +42,6 @@ export function DocLabel({ children, htmlFor, className = '' }: { children: Reac
   )
 }
 
-/** Thin printed rule (1 px ink 15%). */
-export function Rule({ className = '' }: { className?: string }) {
-  return <hr className={`border-0 border-t border-ink/15 ${className}`} />
-}
-
 const mrzName = (s: string) =>
   s
     .toUpperCase()
@@ -93,21 +88,6 @@ export function InkStamp({ src, seed, size, alt, pending = false, large = false,
       </div>
       {pending && <span className="absolute inset-[6%] rounded-full border-[1.5px] border-dashed border-stamp/45" aria-hidden="true" />}
     </div>
-  )
-}
-
-/** Small round ink mark used for map pins and checklists (same visual language as stamps). */
-export function InkMark({ state, code, size = 26 }: { state: 'none' | 'stamped' | 'done'; code: string; size?: number }) {
-  const filled = state !== 'none'
-  return (
-    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" style={{ overflow: 'visible' }}>
-      <circle cx="20" cy="20" r="17" fill={filled ? '#b3261e' : 'none'} fillOpacity={filled ? 0.9 : 0} stroke="#b3261e" strokeWidth={filled ? 0 : 2.4} />
-      <circle cx="20" cy="20" r="13.5" fill="none" stroke={filled ? '#fbf3ea' : '#b3261e'} strokeOpacity={filled ? 0.55 : 0.7} strokeWidth="1" strokeDasharray={filled ? '0' : '2 2'} />
-      <text x="20" y="25" textAnchor="middle" fontFamily="Anton" fontSize="13" fill={filled ? '#fbf3ea' : '#b3261e'}>
-        {code}
-      </text>
-      {state === 'done' && <path d="M27 31l4 4 8-10" fill="none" stroke="#2e7d32" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />}
-    </svg>
   )
 }
 
@@ -161,9 +141,6 @@ export function FadeImg({ src, alt = '', className = '' }: { src: string; alt?: 
   const [on, setOn] = useState(false)
   return <img src={src} alt={alt} onLoad={() => setOn(true)} className={`${className} transition-opacity duration-300 ${on ? 'opacity-100' : 'opacity-0'}`} />
 }
-
-/** Press feedback for buttons: ink darkens / scale .98 within one frame (no bounce). */
-export const press = { whileTap: { scale: 0.98 }, transition: { duration: 0.06 } } as const
 
 /** Paper slip clipped to the page (committee notes). */
 export function ClippedSlip({ children, className = '' }: { children: ReactNode; className?: string }) {

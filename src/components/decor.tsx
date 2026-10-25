@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'motion/react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties } from 'react'
 
 export function DemogorgonFlower({ size = 70, rotate = 0, className = '', style }: { size?: number; rotate?: number; className?: string; style?: CSSProperties }) {
   const reduce = useReducedMotion()
@@ -18,10 +18,6 @@ export function DemogorgonFlower({ size = 70, rotate = 0, className = '', style 
       transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
     />
   )
-}
-
-export function FsBadge({ size = 44 }: { size?: number }) {
-  return <img src="/assets/gsm/logo-october.webp" alt="FS² October Edition" width={size} height={size} className="flex-none rounded-full object-contain" draggable={false} />
 }
 
 /** Official partner logos strip (Kemitraan Global · ITS · …) from the GSM header. */
@@ -94,17 +90,6 @@ export function RetroTV({ src, alt, className = '', powerKey }: { src: string | 
       </div>
       <div className="absolute top-[22%] right-[8px] h-[18px] w-[18px] rounded-full bg-[#2a1a10]" />
       <div className="absolute top-[46%] right-[8px] h-[18px] w-[18px] rounded-full bg-[#2a1a10]" />
-    </div>
-  )
-}
-
-export function Polaroid({ src, caption, className = '', imgClassName = '' }: { src: string | null; caption?: ReactNode; className?: string; imgClassName?: string }) {
-  return (
-    <div className={`bg-[#f4efe4] p-[7%] pb-0 shadow-[0_14px_30px_rgba(0,0,0,0.5)] ${className}`}>
-      <div className={`aspect-square overflow-hidden bg-gradient-to-b from-[#2a2f37] to-[#1b1e24] ${imgClassName}`}>
-        {src && <img src={src} alt="Foto kehadiran" className="h-full w-full object-cover" />}
-      </div>
-      <div className="py-[6%] text-center font-serif text-[#0d2a4a] italic">{caption}</div>
     </div>
   )
 }
