@@ -1,11 +1,12 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { api } from '../../data/api'
 import { useContent } from '../../app/providers'
 import { useParticipant } from '../../app/participant'
 import { ErrorText, Spinner } from '../../components/ui'
 import { haptic } from '../../app/sound'
+import { departmentFromNrp, yearFromNrp } from '../../data/nrpCodes'
 import { InkIcon } from '../../booklet/icons'
 import { DocLabel, Folio, MRZ, PageNo } from '../../booklet/print'
 
@@ -37,6 +38,15 @@ export function Login() {
   const [dept, setDept] = useState('')
   const [deptOther, setDeptOther] = useState('')
   const [angkatan, setAngkatan] = useState('2025')
+  // department and class year fill themselves from the NRP (5025 24… → Informatics, 2024) until the participant picks one
+  const [picked, setPicked] = useState({ dept: false, year: false })
+  useEffect(() => {
+    if (step !== 'register') return
+    const d = departmentFromNrp(nrp)
+    const y = yearFromNrp(nrp)
+    if (d && !picked.dept) setDept(d)
+    if (y && !picked.year) setAngkatan(y)
+  }, [nrp, step, picked])
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
@@ -202,7 +212,7 @@ export function Login() {
                 <div className="grid grid-cols-[1fr_96px] gap-4">
                   <div className="min-w-0">
                     <DocLabel htmlFor="r-dept">Department</DocLabel>
-                    <select id="r-dept" className="field-row" value={dept} onChange={(e) => setDept(e.target.value)}>
+                    <select id="r-dept" className="field-row" value={dept} onChange={(e) => (setDept(e.target.value), setPicked((p) => ({ ...p, dept: true })))}>
                       <option value="">Choose…</option>
                       {content?.departemen.map((d) => (
                         <option key={d}>{d}</option>
@@ -212,8 +222,8 @@ export function Login() {
                   </div>
                   <div>
                     <DocLabel htmlFor="r-angk">Class of</DocLabel>
-                    <select id="r-angk" className="field-row font-mono" value={angkatan} onChange={(e) => setAngkatan(e.target.value)}>
-                      {YEARS.map((y) => (
+                    <select id="r-angk" className="field-row font-mono" value={angkatan} onChange={(e) => (setAngkatan(e.target.value), setPicked((p) => ({ ...p, year: true })))}>
+                      {[...new Set([...YEARS, angkatan].filter((y) => y !== 'Other'))].sort().reverse().map((y) => (
                         <option key={y}>{y}</option>
                       ))}
                       <option value="Other">Other</option>
