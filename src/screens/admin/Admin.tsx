@@ -70,7 +70,7 @@ function AdminShell({ onLogout }: { onLogout: () => void }) {
   ]
   return (
     <div className="flex min-h-dvh flex-col bg-[#f6f4ef] text-ink md:flex-row">
-      <aside className="flex flex-none flex-col bg-navy-2 text-cream md:w-[240px]">
+      <aside className="sticky top-0 z-30 flex flex-none flex-col bg-navy-2 text-cream md:h-dvh md:w-[240px] md:self-start md:overflow-y-auto">
         <p className="px-6 pt-6 font-mono text-[14px] font-bold tracking-[0.3em] text-gold">FS² · ADMIN</p>
         <nav className="no-scrollbar flex gap-1 overflow-x-auto px-3 py-3 md:mt-4 md:flex-col md:overflow-visible" aria-label="Admin menu">
           {links.map((l) => (
