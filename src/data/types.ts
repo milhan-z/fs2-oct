@@ -130,6 +130,8 @@ export interface MyState {
   participant: {
     id: string
     nama: string
+    /** the participant's own full NRP (older cached states only have the masked one) */
+    nrp?: string
     nrpMasked: string
     nrpLast4: string
     departemen: string
@@ -197,6 +199,15 @@ export interface AdminSubmissionRow {
   version: number
   submittedAt: string
   boothCount: number
+  departemen: string
+  angkatan: string
+  reviewerNote: string | null
+  /** booths with a finished note set (counted only for stamped booths) */
+  notesDone: number
+  /** required feedback questions answered, and how many there are */
+  feedbackDone: number
+  feedbackRequired: number
+  stamp4it: boolean
 }
 
 export interface AdminParticipantDetail {
@@ -243,4 +254,22 @@ export class ApiError extends Error {
     super(message)
     this.code = code
   }
+}
+
+export interface FeedbackSummaryItem {
+  questionId: string
+  /** answers given so far */
+  n: number
+  /** average of a 1–5 question (null when nobody answered or it is an open question) */
+  avg: number | null
+  /** how many gave 1, 2, 3, 4, 5 */
+  dist: number[]
+  /** latest written answers of an open question */
+  texts: { nama: string; text: string }[]
+}
+
+export interface FeedbackSummary {
+  /** participants who answered at least one question */
+  respondents: number
+  items: FeedbackSummaryItem[]
 }

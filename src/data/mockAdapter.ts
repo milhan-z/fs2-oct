@@ -232,6 +232,7 @@ function myState(p: PRow): MyState {
     participant: {
       id: p.id,
       nama: p.nama,
+      nrp: p.nrp,
       nrpMasked: maskNrp(p.nrp),
       nrpLast4: p.nrp.slice(-4),
       departemen: p.departemen,
@@ -550,6 +551,32 @@ export const mockAdapter: Api = {
     localStorage.removeItem(SESSION_ADMIN)
   },
 
+  async adminFeedbackSummary() {
+    await delay(60)
+    requireAdmin()
+    const answered = (a: { nilaiInt?: number | null; nilaiTeks?: string | null }) => !!(a.nilaiInt || a.nilaiTeks?.trim())
+    return {
+      respondents: new Set(db.answers.filter(answered).map((a) => a.participantId)).size,
+      items: [...db.content.questions]
+        .sort((a, b) => a.sort - b.sort)
+        .map((q) => {
+          const rows = db.answers.filter((a) => a.questionId === q.id)
+          const ints = rows.map((a) => a.nilaiInt).filter((v): v is number => !!v)
+          return {
+            questionId: q.id,
+            n: rows.filter(answered).length,
+            avg: ints.length ? Math.round((ints.reduce((s, v) => s + v, 0) / ints.length) * 100) / 100 : null,
+            dist: [1, 2, 3, 4, 5].map((k) => ints.filter((v) => v === k).length),
+            texts: rows
+              .filter((a) => a.nilaiTeks?.trim())
+              .slice(-40)
+              .reverse()
+              .map((a) => ({ nama: db.participants.find((p) => p.id === a.participantId)?.nama ?? '—', text: a.nilaiTeks!.trim() })),
+          }
+        }),
+    }
+  },
+
   async adminDashboard() {
     await delay(60)
     requireAdmin()
@@ -581,9 +608,12 @@ export const mockAdapter: Api = {
     requireAdmin()
     const needle = q.trim().toLowerCase()
     return db.submissions
-      .filter((s) => s.status === status)
+      .filter((s) => status === 'all' || s.status === status)
       .map((s) => {
         const p = db.participants.find((x) => x.id === s.participantId)!
+        const rules = db.content.rules
+        const stamped = new Set(activeVisits(p.id).map((v) => v.boothId))
+        const requiredQs = db.content.questions.filter((q) => q.wajib)
         return {
           submissionId: s.id,
           participantId: p.id,
@@ -593,7 +623,17 @@ export const mockAdapter: Api = {
           status: s.status,
           version: s.version,
           submittedAt: s.submittedAt,
-          boothCount: activeVisits(p.id).length,
+          boothCount: stamped.size,
+          departemen: p.departemen,
+          angkatan: p.angkatan,
+          reviewerNote: s.reviewerNote,
+          notesDone: db.resumes.filter((r) => r.participantId === p.id && stamped.has(r.boothId) && r.poin.filter((x) => poinOk(x, rules.min_kata_per_poin)).length >= rules.poin_per_resume).length,
+          feedbackDone: requiredQs.filter((q) => {
+            const a = db.answers.find((x) => x.participantId === p.id && x.questionId === q.id)
+            return !!(a?.nilaiInt || a?.nilaiTeks?.trim())
+          }).length,
+          feedbackRequired: requiredQs.length,
+          stamp4it: !!db.stamp4it[p.id]?.given,
         }
       })
       .filter((r) => !needle || r.nama.toLowerCase().includes(needle) || r.nrp.includes(needle))

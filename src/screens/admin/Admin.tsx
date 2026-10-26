@@ -168,7 +168,100 @@ function Summary({ data }: { data: Awaited<ReturnType<typeof api.adminDashboard>
           </ul>
         </div>
       </div>
+      <FeedbackPanel content={content} />
     </section>
+  )
+}
+
+/** Feedback so far: the average and 1–5 spread of every scale question, and the latest written answers. */
+function FeedbackPanel({ content }: { content: NonNullable<ReturnType<typeof useContent>['content']> }) {
+  const fb = useLive(() => api.adminFeedbackSummary(), [], 15000)
+  const [open, setOpen] = useState<Set<string>>(new Set())
+  const questions = [...content.questions].sort((a, b) => a.sort - b.sort)
+  const byId = new Map((fb.data?.items ?? []).map((i) => [i.questionId, i]))
+  // consecutive questions with the same section title form one block
+  const blocks: { title: string; qs: typeof questions }[] = []
+  for (const q of questions) {
+    const title = q.section ?? ''
+    const last = blocks[blocks.length - 1]
+    if (last && last.title === title) last.qs.push(q)
+    else blocks.push({ title, qs: [q] })
+  }
+  const mean = (qs: typeof questions) => {
+    const v = qs.map((q) => byId.get(q.id)?.avg).filter((x): x is number => typeof x === 'number')
+    return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null
+  }
+  const COLORS = ['#c0392b', '#e67e22', '#f1c40f', '#7fb77e', '#2e7d32']
+
+  return (
+    <div className="mt-6 rounded-2xl border border-[#e4ddd0] bg-white p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-[17px] font-bold">Feedback so far</h2>
+        <p className="text-[14px] text-[#6b6058]">{fb.data ? `${fb.data.respondents} participant${fb.data.respondents === 1 ? '' : 's'} answered` : 'Loading…'}</p>
+      </div>
+      {fb.data && fb.data.respondents === 0 && <p className="mt-3 text-[14px] text-[#6b6058]">No feedback yet. It fills in here as participants answer.</p>}
+      {fb.data && fb.data.respondents > 0 && (
+        <div className="mt-3 grid gap-x-8 gap-y-6 lg:grid-cols-2">
+          {blocks.map((b, bi) => {
+            const avg = mean(b.qs)
+            return (
+              <div key={bi} className="min-w-0">
+                <p className="flex items-baseline justify-between gap-3 border-b border-[#efe9df] pb-1 text-[14px] font-bold">
+                  <span className="truncate">{b.title || 'Questions'}</span>
+                  {avg !== null && <span className="flex-none font-mono">avg {avg.toFixed(2)} / 5</span>}
+                </p>
+                <ul className="mt-2 flex flex-col gap-3">
+                  {b.qs.map((q) => {
+                    const it = byId.get(q.id)
+                    if (q.tipe === 'teks') {
+                      const all = it?.texts ?? []
+                      const showAll = open.has(q.id)
+                      return (
+                        <li key={q.id} className="text-[14px]">
+                          <p className="font-semibold">
+                            {q.teks} <span className="font-normal text-[#6b6058]">· {it?.n ?? 0} answer{it?.n === 1 ? '' : 's'}</span>
+                          </p>
+                          {all.length > 0 && (
+                            <ul className="mt-1 flex flex-col gap-1.5">
+                              {(showAll ? all : all.slice(0, 3)).map((t, i) => (
+                                <li key={i} className="rounded-lg bg-[#faf8f4] px-3 py-2 leading-snug">
+                                  “{t.text}” <span className="text-[12px] text-[#6b6058]">— {t.nama}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          {all.length > 3 && (
+                            <button type="button" className="mt-1 min-h-9 text-[13px] underline" onClick={() => setOpen((s) => new Set(showAll ? [...s].filter((x) => x !== q.id) : [...s, q.id]))}>
+                              {showAll ? 'Show fewer' : `Show all ${all.length}`}
+                            </button>
+                          )}
+                        </li>
+                      )
+                    }
+                    const total = it?.dist.reduce((s, v) => s + v, 0) ?? 0
+                    return (
+                      <li key={q.id} className="text-[14px]">
+                        <div className="flex items-baseline justify-between gap-3">
+                          <span className="min-w-0 truncate">{q.teks}</span>
+                          <span className="flex-none font-mono">
+                            <b>{it?.avg != null ? it.avg.toFixed(2) : '–'}</b> <span className="text-[#6b6058]">· {total}</span>
+                          </span>
+                        </div>
+                        <div className="mt-1 flex h-2.5 overflow-hidden rounded-full bg-[#efe9df]" role="img" aria-label={`1 to 5 spread: ${it?.dist.join(', ') ?? 'no answers'}`}>
+                          {(it?.dist ?? []).map((n, k) => (
+                            <div key={k} style={{ width: total ? `${(n / total) * 100}%` : 0, background: COLORS[k] }} title={`${k + 1}: ${n}`} />
+                          ))}
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 

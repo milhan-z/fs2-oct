@@ -84,7 +84,7 @@ export function QrPermit({ onClose }: { onClose: () => void }) {
             </div>
 
             <p className="mt-4 text-[16px] font-semibold text-ink">{state?.participant.nama}</p>
-            <p className="font-mono text-[15px] text-ink/75">NRP {state?.participant.nrpMasked}</p>
+            <p className="font-mono text-[15px] text-ink/75">NRP {state?.participant.nrp ?? state?.participant.nrpMasked}</p>
             <p className="mt-2 flex items-center gap-1.5 text-[13px] text-ink/65">
               <InkIcon.Sun className="h-4 w-4" /> Turn up your screen brightness
             </p>

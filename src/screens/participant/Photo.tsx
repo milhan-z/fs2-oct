@@ -152,7 +152,7 @@ export function Photo() {
           </div>
           <div>
             <DocLabel>NRP</DocLabel>
-            <dd className="doc-data">{p.nrpMasked}</dd>
+            <dd className="doc-data">{p.nrp ?? p.nrpMasked}</dd>
           </div>
           <div>
             <DocLabel>Department</DocLabel>

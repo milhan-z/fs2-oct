@@ -335,6 +335,7 @@ export function supabaseAdapter(): Api {
     adminLogout: () => localStorage.removeItem(SESSION_ADMIN),
 
     adminDashboard: () => rpc('admin_dashboard', { p_token: aToken() }),
+    adminFeedbackSummary: () => rpc('admin_feedback_summary', { p_token: aToken() }),
     adminListSubmissions: (status, q) => rpc('admin_list_submissions', { p_token: aToken(), p_status: status, p_q: q.trim() }),
 
     async adminParticipantDetail(pid) {

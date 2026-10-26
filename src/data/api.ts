@@ -3,6 +3,7 @@ import type {
   AdminParticipantDetail,
   AdminParticipantRow,
   AdminSubmissionRow,
+  FeedbackSummary,
   Answer,
   Booth,
   Content,
@@ -66,7 +67,9 @@ export interface Api {
   adminHasSession(): boolean
   adminLogout(): void
   adminDashboard(): Promise<AdminDashboard>
-  adminListSubmissions(status: SubmissionStatus, q: string): Promise<AdminSubmissionRow[]>
+  adminFeedbackSummary(): Promise<FeedbackSummary>
+  /** `all` lists every status */
+  adminListSubmissions(status: SubmissionStatus | 'all', q: string): Promise<AdminSubmissionRow[]>
   adminParticipantDetail(participantId: string): Promise<AdminParticipantDetail>
   adminReview(submissionId: string, action: 'approve' | 'revision', note: string): Promise<void>
   adminSetStamp4it(participantId: string, given: boolean): Promise<void>

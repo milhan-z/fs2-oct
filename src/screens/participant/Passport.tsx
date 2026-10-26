@@ -59,7 +59,7 @@ export function Passport() {
           <div className="flex gap-5">
             <div>
               <DocLabel>NRP</DocLabel>
-              <dd className="doc-data">{p.nrpMasked}</dd>
+              <dd className="doc-data">{p.nrp ?? p.nrpMasked}</dd>
             </div>
             <div>
               <DocLabel>Class of</DocLabel>
