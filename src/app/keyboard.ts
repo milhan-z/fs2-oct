@@ -7,7 +7,7 @@ const isField = (el: EventTarget | Element | null): el is HTMLElement => el inst
  * Phone-keyboard manners for every form in the app:
  *  - `--kb` (px) on <html> is the height the on-screen keyboard covers, so scrolling pages can leave room under
  *    their content (`padding-bottom: var(--kb)`) and the focused field can always be lifted above the keyboard;
- *  - the focused field is scrolled into the middle of the visible area once the keyboard has opened;
+ *  - a focused field that the keyboard would cover is scrolled just into view (nothing moves if it is already visible);
  *  - dragging the page downwards with a finger puts the keyboard away (interactive dismiss).
  */
 export function useKeyboardAvoid() {
@@ -18,7 +18,16 @@ export function useKeyboardAvoid() {
     let timer = 0
     let kb = 0
 
-    const reveal = (el: HTMLElement) => el.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' })
+    // Only moves the page when the field is really hidden (under the keyboard or off the top), and then just enough.
+    // A field that is already visible never makes the page jump while someone types.
+    const reveal = (el: HTMLElement) => {
+      const r = el.getBoundingClientRect()
+      const top = (vv?.offsetTop ?? 0) + 12
+      const bottom = (vv?.offsetTop ?? 0) + (vv?.height ?? window.innerHeight) - 12
+      if (r.top >= top && r.bottom <= bottom) return
+      if (r.height > bottom - top) return // taller than the free area: leave it where the user put it
+      el.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' })
+    }
 
     const update = () => {
       kb = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0
