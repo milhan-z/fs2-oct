@@ -35,7 +35,7 @@ export function Exit({ onClose }: { onClose: () => void }) {
   if (!content || !state || !prog || !answers) return <PageSkeleton />
   if (prog.locked && !sending) return <Navigate to="/status" replace />
 
-  const total = content.booths.length
+  const total = prog.required
   const questions = [...content.questions].sort((a, b) => a.sort - b.sort)
   const get = (id: string) => answers.find((a) => a.questionId === id)
   const answered = (id: string) => {

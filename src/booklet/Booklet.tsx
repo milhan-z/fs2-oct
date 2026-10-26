@@ -196,8 +196,8 @@ export function Booklet() {
   }
 
   // --- progress lights -------------------------------------------------------------------------
-  const total = content?.booths.length ?? 4
-  const stamped = prog?.stampCount ?? 0
+  const total = prog?.required ?? (content ? Math.min(content.rules.jumlah_booth_wajib, content.booths.length) : 4)
+  const stamped = Math.min(prog?.stampCount ?? 0, total)
   const prevStamped = useRef(stamped)
   const [justLit, setJustLit] = useState<number | null>(null)
   const [celebrate, setCelebrate] = useState(false)

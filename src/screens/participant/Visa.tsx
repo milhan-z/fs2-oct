@@ -95,7 +95,7 @@ export function Visa({ boothId, stampMode, onClose }: { boothId: string; stampMo
   const min = content.rules.min_kata_per_poin
   const okCount = poin.filter((p) => poinOk(p, min)).length
   const locked = prog.locked
-  const total = content.booths.length
+  const total = prog.required
   const no = String(booth.sort).padStart(2, '0')
 
   const change = (i: number, v: string) => {
@@ -195,7 +195,7 @@ export function Visa({ boothId, stampMode, onClose }: { boothId: string; stampMo
         {moment && landed && stampMode && (
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduce ? 0 : 0.5, duration: 0.25 }}>
             <p className="mt-5 text-[15px] leading-[22px] text-ink/75">
-              {prog.stampCount} of {total} visas stamped. Write your notes now, or come back to this page later.
+              {Math.min(prog.stampCount, total)} of {total} visas stamped{content.booths.length > total ? ' (any booths count)' : ''}. Write your notes now, or come back to this page later.
             </p>
             <div className="mt-4 flex items-center gap-3">
               <motion.button type="button" whileTap={{ scale: 0.98 }} transition={{ duration: 0.06 }} onClick={writeNow} className="btn btn-line flex-1">

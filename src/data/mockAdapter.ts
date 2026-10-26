@@ -739,6 +739,19 @@ export const mockAdapter: Api = {
     save()
   },
 
+  async adminDeleteBooth(id) {
+    await delay()
+    requireAdmin()
+    if (!db.content.booths.some((b) => b.id === id)) throw new ApiError('not_found', 'Booth not found.')
+    db.content.booths = db.content.booths.filter((b) => b.id !== id)
+    db.content.speakers = db.content.speakers.filter((s) => s.boothId !== id)
+    delete db.staffPins[id]
+    db.visits = db.visits.filter((v) => v.boothId !== id)
+    db.resumes = db.resumes.filter((r) => r.boothId !== id)
+    audit('admin', 'delete_booth', id)
+    save()
+  },
+
   async adminUpsertSpeaker(s) {
     await delay()
     requireAdmin()

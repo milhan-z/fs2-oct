@@ -88,7 +88,7 @@ export function Onboarding() {
 
       {/* a) lights */}
       <div className="relative z-10 mx-6 mt-1 h-[42px]">
-        <LightString lit="all" count={content?.booths.length ?? 4} sequence={!reduce} className="h-full w-full" />
+        <LightString lit="all" count={content ? Math.min(content.rules.jumlah_booth_wajib, content.booths.length) : 4} sequence={!reduce} className="h-full w-full" />
       </div>
 
       {/* b) building silhouette rising, pines in front */}

@@ -358,6 +358,7 @@ export function supabaseAdapter(): Api {
     adminDeleteParticipant: (pid) => rpc<void>('admin_delete_participant', { p_token: aToken(), p_pid: pid }),
     adminResetStaffPin: (boothId) => rpc<string>('admin_reset_staff_pin', { p_token: aToken(), p_booth: boothId }),
     adminUpsertBooth: (b) => rpc('admin_upsert_booth', { p_token: aToken(), p_booth: b }),
+    adminDeleteBooth: (id) => rpc('admin_delete_booth', { p_token: aToken(), p_id: id }),
     adminUpsertSpeaker: (s) => rpc('admin_upsert_speaker', { p_token: aToken(), p_speaker: s }),
     adminDeleteSpeaker: (id) => rpc('admin_delete_speaker', { p_token: aToken(), p_id: id }),
     adminUpsertFacility: (f) => rpc('admin_upsert_facility', { p_token: aToken(), p_facility: f }),

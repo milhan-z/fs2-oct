@@ -82,6 +82,8 @@ export interface Api {
   /** new shared staff PIN (all booths) — shown once */
   adminResetStaffMasterPin(): Promise<string>
   adminUpsertBooth(b: Booth): Promise<void>
+  /** removes the booth with its speakers, staff PIN, stamps and notes */
+  adminDeleteBooth(id: string): Promise<void>
   adminUpsertSpeaker(s: Speaker): Promise<void>
   adminDeleteSpeaker(id: string): Promise<void>
   adminUpsertFacility(f: Facility): Promise<void>

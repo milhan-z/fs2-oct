@@ -74,7 +74,7 @@ export function MapScreen() {
           <h1 className="font-serif text-[22px] leading-tight font-bold whitespace-nowrap text-ink">Booth Map</h1>
         </div>
         <p className="flex-none text-right font-mono text-[11px] leading-tight text-ink/70">
-          {prog.stampCount} of {booths.length} stamped
+          {booths.length > prog.required ? `${prog.stampCount} stamped · ${prog.required} needed` : `${prog.stampCount} of ${booths.length} stamped`}
         </p>
       </div>
 
@@ -192,12 +192,13 @@ function nextStep(content: Content, state: MyState, prog: Progress): { label: st
   const unstamped = booths.filter((b) => !prog.stamped.has(b.id))
   if (state.submission?.status === 'revision') return { label: 'Revise your submission (see note)', to: '/status' }
   if (state.submission) return { label: 'Submitted · check status', to: '/status' }
-  if (unstamped.length) {
+  // any `required` booths count; further visits are optional
+  if (prog.stampCount < prog.required && unstamped.length) {
     const names = unstamped.map((b) => b.nama)
     const label = names.length <= 2 ? names.join(' & ') : `${names.slice(0, 2).join(', ')} +${names.length - 2}`
     return { label: `Visit ${label}`, to: `/map?booth=${unstamped[0].id}` }
   }
-  const noResume = booths.find((b) => !prog.resumeComplete.has(b.id))
+  const noResume = prog.resumeCount < prog.required ? booths.find((b) => prog.stamped.has(b.id) && !prog.resumeComplete.has(b.id)) : undefined
   if (noResume) return { label: `Write notes for ${noResume.nama}`, to: `/visa/${noResume.id}` }
   return { label: 'Give feedback & submit', to: '/exit' }
 }

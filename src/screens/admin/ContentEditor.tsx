@@ -34,6 +34,34 @@ export function ContentEditor() {
     setTimeout(() => setSaved(''), 1800)
   }
   const booths = [...content.booths].sort((a, b) => a.sort - b.sort)
+  const required = Math.min(content.rules.jumlah_booth_wajib, booths.length)
+
+  // a new booth gets the next free number (B5, slug booth-5), a spot inside the Lounge to drag from, and one placeholder speaker
+  const addBooth = async () => {
+    const used = new Set(booths.map((b) => b.id))
+    const slugs = new Set(booths.map((b) => b.slug))
+    let n = Math.max(0, ...booths.map((b) => Number(/^B(d+)$/.exec(b.id)?.[1] ?? 0))) + 1
+    while (used.has(`B${n}`) || slugs.has(`booth-${n}`)) n++
+    const k = booths.length
+    const id = `B${n}`
+    try {
+      await api.adminUpsertBooth({
+        id,
+        slug: `booth-${n}`,
+        nama: `Booth ${n}`,
+        region: '',
+        stamp: null,
+        x: Math.round(LOUNGE_BOUNDS.x + LOUNGE_BOUNDS.w / 2 + ((k % 3) - 1) * 110),
+        y: Math.round(LOUNGE_BOUNDS.y + 320 + Math.floor(k / 3) * 150),
+        placeholderPos: true,
+        sort: Math.max(0, ...booths.map((b) => b.sort)) + 1,
+      })
+      await api.adminUpsertSpeaker({ id: `${id}-s1`, boothId: id, nama: 'Speaker TBA', universitas: '', program: '', foto: null, cerita: '', placeholder: true })
+      done('Booth added — drag its pin on the map')
+    } catch (e) {
+      alert((e as Error).message)
+    }
+  }
 
   return (
     <section className="p-5 md:p-8">
@@ -42,14 +70,20 @@ export function ContentEditor() {
         {saved && <span className="rounded-full bg-[#e3f3e6] px-3 py-1 text-[14px] font-bold text-[#2e7d32]">{saved}</span>}
       </div>
       <p className="mt-1 text-[14px] text-[#6b6058]">Every change shows up on participants’ phones right away (no redeploy).</p>
+      <p className="mt-1 text-[14px] text-[#6b6058]">
+        There can be any number of booths and speakers. Each participant only has to finish <b>{required}</b> booths (stamp + notes) — whichever they choose.
+      </p>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(320px,420px)_1fr]">
         <MapEditor booths={booths} facilities={content.facilities} onSaved={done} />
         <div className="flex flex-col gap-5">
           <StaffPinCard />
           {booths.map((b) => (
-            <BoothCard key={b.id} booth={b} speakers={content.speakers.filter((s) => s.boothId === b.id)} onSaved={done} />
+            <BoothCard key={b.id} booth={b} speakers={content.speakers.filter((s) => s.boothId === b.id)} canDelete={booths.length > 1} onSaved={done} />
           ))}
+          <button type="button" className="min-h-12 rounded-2xl border-2 border-dashed border-[#a99a98] px-4 text-[15px] font-semibold" onClick={addBooth}>
+            + Add booth
+          </button>
           <FacilitiesCard facilities={content.facilities} onSaved={done} />
           <QuestionsCard questions={[...content.questions].sort((a, b) => a.sort - b.sort)} onSaved={done} />
         </div>
@@ -319,7 +353,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-function BoothCard({ booth, speakers, onSaved }: { booth: Booth; speakers: Speaker[]; onSaved: (m?: string) => void }) {
+function BoothCard({ booth, speakers, canDelete, onSaved }: { booth: Booth; speakers: Speaker[]; canDelete: boolean; onSaved: (m?: string) => void }) {
   const [b, setB] = useState(booth)
   const [pin, setPin] = useState<string | null>(null)
   // position is edited on the map; this form only owns the text/stamp fields
@@ -363,6 +397,27 @@ function BoothCard({ booth, speakers, onSaved }: { booth: Booth; speakers: Speak
           <span className="rounded-lg bg-[#fff7e0] px-3 py-2" role="alert">
             New PIN: <b className="font-mono text-[18px] tracking-[0.2em]">{pin}</b> (shown once)
           </span>
+        )}
+        {canDelete && (
+          <button
+            type="button"
+            className="min-h-10 text-[#9b2c2c] underline"
+            onClick={async () => {
+              const typed = prompt(`Delete the booth "${booth.nama}"? Its speakers, officer PIN and every participant's stamp and notes for this booth are removed. This cannot be undone.
+
+Type the booth name to confirm:`)
+              if (typed === null) return
+              if (typed.trim().toLowerCase() !== booth.nama.trim().toLowerCase()) return alert('The name did not match — nothing was deleted.')
+              try {
+                await api.adminDeleteBooth(booth.id)
+                onSaved('Booth deleted')
+              } catch (e) {
+                alert((e as Error).message)
+              }
+            }}
+          >
+            Delete booth
+          </button>
         )}
         <button type="button" className="btn btn-red ml-auto min-h-10 text-[14px]" disabled={!dirty} onClick={async () => (await api.adminUpsertBooth(merged), onSaved())}>
           Save booth

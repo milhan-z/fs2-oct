@@ -14,7 +14,7 @@ const STEPS = [
   { sel: '[data-tour="next"]', title: 'Next up', body: 'Always shows where to go next. Tap it and it opens that booth for you.' },
   { sel: '[data-tour="pin"]', title: 'Booth pins', body: 'Tap a pin to meet the speaker and see your visa status for that booth.' },
   { sel: '[data-tour="tab-qr"]', title: 'Your QR permit', body: 'Show it to the booth officer. They scan it and your passport gets stamped, within seconds.' },
-  { sel: '[data-tour="tab-passport"]', title: 'Your passport', body: 'Your 4 visas, your notes for each booth and, at the end, feedback and Submit.' },
+  { sel: '[data-tour="tab-passport"]', title: 'Your passport', body: 'Your visas, your notes for each booth and, at the end, feedback and Submit.' },
 ] as const
 
 interface Box {

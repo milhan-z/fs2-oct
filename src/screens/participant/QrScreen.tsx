@@ -50,6 +50,8 @@ export function QrPermit({ onClose }: { onClose: () => void }) {
   const all = !!(content && prog && prog.stampCount >= content.booths.length)
   const note = all
     ? 'All booths are stamped. No need to show your QR anymore.'
+    : content && prog && prog.stampCount >= prog.required && content.booths.length > prog.required
+      ? `You already have the ${prog.required} stamps you need. More visits are optional.`
     : s?.simulationMode || phase === 'open'
       ? 'Once the officer taps Confirm, your visa gets stamped right away.'
       : phase === 'before' && s

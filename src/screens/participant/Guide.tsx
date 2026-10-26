@@ -31,10 +31,10 @@ export function Guide() {
   const steps = [
     'Open your passport with your NRP + a 4-digit PIN (new passports are created on the spot).',
     'Take one attendance photo — your QR activates after that.',
-    `Visit all ${rules.jumlah_booth_wajib} booths in the Lounge, in any order. Show your QR, the officer confirms, and your passport gets stamped.`,
-    `Write notes for each booth: ${rules.poin_per_resume} points, at least ${rules.min_kata_per_poin} words each. You can do it later.`,
+    `Visit ${content.booths.length > rules.jumlah_booth_wajib ? `at least ${rules.jumlah_booth_wajib} of the ${content.booths.length}` : `all ${rules.jumlah_booth_wajib}`} booths in the Lounge, in any order. Show your QR, the officer confirms, and your passport gets stamped.`,
+    `Write notes for ${rules.jumlah_booth_wajib} booths: ${rules.poin_per_resume} points, at least ${rules.min_kata_per_poin} words each. You can do it later.`,
     'Fill in the feedback, then Submit from the Exit page.',
-    'On your way out, show your Passport page (4 stamps) to the committee at the exit.',
+    'On your way out, show your Passport page (your stamps) to the committee at the exit.',
   ]
 
   return (

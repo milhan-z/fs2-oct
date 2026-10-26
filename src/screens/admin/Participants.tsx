@@ -12,6 +12,7 @@ export function Participants() {
   const list = useLive(() => api.adminListParticipants(q), [q], 10000)
   const [shown, setShown] = useState<{ nama: string; nrp: string } | null>(null)
   const [editing, setEditing] = useState<AdminParticipantRow | null>(null)
+  const { content } = useContent()
 
   const remove = async (id: string, nama: string, nrp: string) => {
     const typed = prompt(`Delete ${nama} (${nrp}) with all stamps, notes, feedback and submission? This cannot be undone.
@@ -85,7 +86,7 @@ Type the NRP to confirm:`)
                   {p.departemen} · {p.angkatan}
                 </td>
                 <td className="px-4 py-2">{p.hasPhoto ? 'Yes' : '—'}</td>
-                <td className="px-4 py-2">{p.visits}/4</td>
+                <td className="px-4 py-2">{p.visits}/{content?.booths.length ?? '—'}</td>
                 <td className="px-4 py-2">{p.status ? STATUS[p.status] : '—'}</td>
                 <td className="px-4 py-2 text-right whitespace-nowrap">
                   <button type="button" className="min-h-10 rounded-lg border border-[#d5cabd] px-3 font-semibold" onClick={() => setEditing(p)}>

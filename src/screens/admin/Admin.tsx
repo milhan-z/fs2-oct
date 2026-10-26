@@ -111,7 +111,7 @@ function Summary({ data }: { data: Awaited<ReturnType<typeof api.adminDashboard>
   const cards = [
     ['Registered', data.participants],
     ['With photo', data.withPhoto],
-    ['4/4 booths', data.allFour],
+    [`${content.rules.jumlah_booth_wajib} booths done`, data.allFour],
     ['Awaiting review', data.submissions.submitted],
     ['Needs revision', data.submissions.revision],
     ['Approved', data.submissions.approved],

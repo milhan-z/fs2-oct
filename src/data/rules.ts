@@ -15,7 +15,12 @@ export function resumeDone(state: MyState, boothId: string, min: number): number
   return r.poin.filter((p) => poinOk(p, min)).length
 }
 
+/** How many booths a participant has to finish (stamp + notes). More booths may exist; the rest are optional. */
+export const requiredBooths = (content: Pick<Content, 'rules' | 'booths'>) => Math.min(content.rules.jumlah_booth_wajib, content.booths.length)
+
 export interface Progress {
+  /** booths that must be finished */
+  required: number
   stamped: Set<string>
   stampCount: number
   resumeComplete: Set<string>
@@ -39,10 +44,11 @@ export function progress(state: MyState, content: Content): Progress {
     const a = state.answers.find((x) => x.questionId === q.id)
     return q.tipe === 'skala_1_5' ? !!a?.nilaiInt : !!a?.nilaiTeks?.trim()
   }).length
-  const total = Math.min(rules.jumlah_booth_wajib, booths.length)
+  const total = requiredBooths(content)
   const pastDeadline = nowMs() > new Date(content.settings.deadline).getTime()
   const locked = state.submission?.status === 'submitted' || state.submission?.status === 'approved'
   return {
+    required: total,
     stamped,
     stampCount: stamped.size,
     resumeComplete,

@@ -15,7 +15,7 @@ export function shortUni(u: string): string {
 }
 
 /**
- * P6 — the passport on one full page: identity data, the four visas with a clear next action on
+ * P6 — the passport on one full page: identity data, the visas with a clear next action on
  * each (tap one to open that visa page as a pop-up — stamp + notes), and the printed
  * requirements. It is also the exit-gate proof: four stamps visible at a glance.
  */
@@ -27,7 +27,7 @@ export function Passport() {
   if (!content || !state || !prog) return <PageSkeleton photo />
 
   const booths = [...content.booths].sort((a, b) => a.sort - b.sort)
-  const total = booths.length
+  const total = prog.required
   const min = content.rules.min_kata_per_poin
   const need = content.rules.poin_per_resume
   const sub = state.submission
@@ -78,9 +78,10 @@ export function Passport() {
       <div className="mt-8 flex items-baseline justify-between">
         <h2 className="font-serif text-[22px] font-bold">Visa pages</h2>
         <span className="font-mono text-[12px] text-ink/65">
-          {prog.stampCount}/{total} stamped · {prog.resumeCount}/{total} notes
+          {Math.min(prog.stampCount, total)}/{total} stamped · {Math.min(prog.resumeCount, total)}/{total} notes
         </span>
       </div>
+      {booths.length > total && <p className="mt-1 text-[13px] text-ink/65">Any {total} of the {booths.length} booths count. Visit more if you like.</p>}
       <ul className="mt-3 grid grid-cols-2 gap-x-3 gap-y-4">
         {booths.map((b) => {
           const visit = state.visits.find((v) => v.boothId === b.id)
@@ -138,8 +139,8 @@ export function Passport() {
             <p className="font-mono text-[12px] tracking-[0.08em] text-ink/65 uppercase">To submit · Deadline {fmtDeadline(content.settings.deadline)}</p>
             <ul className="mt-2 flex flex-col">
               {[
-                { ok: prog.stampCount >= total, label: `${total} booths stamped`, detail: `(${prog.stampCount}/${total})` },
-                { ok: prog.resumeCount >= total, label: `${total} booth notes done`, detail: `(${prog.resumeCount}/${total})` },
+                { ok: prog.stampCount >= total, label: `${total} booths stamped`, detail: `(${Math.min(prog.stampCount, total)}/${total})` },
+                { ok: prog.resumeCount >= total, label: `${total} booth notes done`, detail: `(${Math.min(prog.resumeCount, total)}/${total})` },
               ].map((r) => (
                 <li key={r.label} className="flex items-center gap-3 border-b border-ink/15 py-3 text-[15px]">
                   <span className="flex h-5 w-5 flex-none items-center justify-center border-[1.5px] border-ink/60">{r.ok && <InkIcon.Check className="h-4 w-4 text-stamp" />}</span>
@@ -152,7 +153,7 @@ export function Passport() {
                   <span className="flex h-5 w-5 flex-none items-center justify-center border-[1.5px] border-ink/60">{prog.feedbackDone && <InkIcon.Check className="h-4 w-4 text-stamp" />}</span>
                   <span>Feedback</span>
                   <span className="font-mono text-ink/55">{prog.feedbackDone ? '(done)' : '(not yet)'}</span>
-                  <span className={`ml-auto text-[14px] font-semibold ${ready ? 'text-stamp' : 'text-ink/35'}`}>{ready ? 'Answer & submit →' : 'After 4 notes'}</span>
+                  <span className={`ml-auto text-[14px] font-semibold ${ready ? 'text-stamp' : 'text-ink/35'}`}>{ready ? 'Answer & submit →' : `After ${total} notes`}</span>
                 </button>
               </li>
             </ul>

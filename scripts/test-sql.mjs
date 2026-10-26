@@ -187,6 +187,17 @@ await call('admin_upsert_booth', [at, JSON.stringify({ ...content.booths[0], x: 
 ok((await call('get_content', [])).booths[0].x === 1000, 'admin moves booth point')
 await call('admin_set_settings', [at, JSON.stringify({ simulationMode: false })])
 ok((await call('get_content', [])).settings.simulationMode === false, 'admin toggles simulation mode')
+// --- more (or fewer) booths: the required count stays at rules.jumlah_booth_wajib
+const nBooths = (await call('get_content', [])).booths.length
+await call('admin_upsert_booth', [at, JSON.stringify({ id: 'B9', slug: 'booth-9', nama: 'Booth 9', x: 900, y: 3000, sort: 9 })])
+await call('admin_upsert_speaker', [at, JSON.stringify({ id: 'B9-s1', boothId: 'B9', nama: 'Speaker TBA' })])
+const withNine = await call('get_content', [])
+ok(withNine.booths.length === nBooths + 1 && withNine.speakers.some((s) => s.boothId === 'B9'), 'admin adds a booth and its speaker')
+await expectErr('admin_delete_booth', ['not-a-token', 'B9'], 'auth', 'deleting a booth needs the admin session')
+await call('admin_delete_booth', [at, 'B9'])
+const afterDel = await call('get_content', [])
+ok(afterDel.booths.length === nBooths && !afterDel.speakers.some((s) => s.boothId === 'B9'), 'admin deletes the booth and its speakers go with it')
+await expectErr('admin_delete_booth', [at, 'B9'], 'not_found', 'deleting an unknown booth is reported')
 const raw = await call('admin_export_raw', [at])
 const rawText = JSON.stringify(raw)
 ok(raw.participants.length === 1 && raw.submissions.length === 1, 'export raw rows')

@@ -43,7 +43,7 @@ export function Submissions({ onChange }: { onChange: () => void }) {
                 <span>
                   <span className="block font-bold">{r.nama}</span>
                   <span className="font-mono text-[13px] text-[#6b6058]">
-                    {r.code} · {r.boothCount}/4 booths{r.version > 1 ? ' · resubmitted' : ''}
+                    {r.code} · {r.boothCount} booths{r.version > 1 ? ' · resubmitted' : ''}
                   </span>
                 </span>
                 <span className="text-[13px] text-[#6b6058]">{fmtTime(r.submittedAt)}</span>
