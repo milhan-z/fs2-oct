@@ -34,6 +34,14 @@ export function MapScreen() {
     sessionStorage.setItem(MODE_KEY, mode)
   }, [mode])
 
+  // Escape zooms out of a room (keyboard users, desktop)
+  useEffect(() => {
+    if (mode === BUILDING) return
+    const k = (e: KeyboardEvent) => e.key === 'Escape' && !openBooth && setMode(BUILDING)
+    window.addEventListener('keydown', k)
+    return () => window.removeEventListener('keydown', k)
+  }, [mode, openBooth])
+
   // opening a booth (e.g. from "Next up") first shows the room it stands in
   useEffect(() => {
     const b = content?.booths.find((x) => x.id === openBooth)
@@ -105,7 +113,7 @@ export function MapScreen() {
         ))}
       </div>
 
-      <FoldedMap renderMap={map}>
+      <FoldedMap renderMap={map} onZoomOut={shownMode !== BUILDING ? () => setMode(BUILDING) : undefined}>
         {/* inside a room: a clear way back to the whole building, and how far along the room is */}
         {shownMode !== BUILDING && (
           <>
@@ -161,8 +169,15 @@ export function MapScreen() {
 }
 
 /** The folded floor plan: slides out of the back pocket, then unfolds top and bottom panels. */
-function FoldedMap({ renderMap, children }: { renderMap: (interactive: boolean) => React.ReactNode; children?: React.ReactNode }) {
+function FoldedMap({ renderMap, children, onZoomOut }: { renderMap: (interactive: boolean) => React.ReactNode; children?: React.ReactNode; onZoomOut?: () => void }) {
   const reduce = useReducedMotion()
+  // pinching the map together (zooming out) inside a room goes straight to the whole building
+  const fingers = useRef(new Map<number, { x: number; y: number }>())
+  const pinch = useRef<{ d0: number; done: boolean } | null>(null)
+  const dist = () => {
+    const [a, b] = [...fingers.current.values()]
+    return Math.hypot(a.x - b.x, a.y - b.y)
+  }
   const box = useRef<HTMLDivElement>(null)
   const [h, setH] = useState(0)
   const first = useRef(sessionStorage.getItem(UNFOLDED_KEY) !== '1')
@@ -187,7 +202,31 @@ function FoldedMap({ renderMap, children }: { renderMap: (interactive: boolean) 
   const third = h / 3
 
   return (
-    <div className="relative mx-3 mt-2 min-h-[380px] flex-1" style={{ perspective: 1100 }}>
+    <div
+      className="relative mx-3 mt-2 min-h-[380px] flex-1"
+      style={{ perspective: 1100, touchAction: onZoomOut ? 'pan-y' : undefined }}
+      onPointerDown={(e) => {
+        fingers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+        if (fingers.current.size === 2) pinch.current = { d0: dist(), done: false }
+      }}
+      onPointerMove={(e) => {
+        if (!fingers.current.has(e.pointerId)) return
+        fingers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+        const g = pinch.current
+        if (g && !g.done && fingers.current.size === 2 && g.d0 > 40 && dist() < g.d0 * 0.7) {
+          g.done = true
+          onZoomOut?.()
+        }
+      }}
+      onPointerUp={(e) => {
+        fingers.current.delete(e.pointerId)
+        if (fingers.current.size < 2) pinch.current = null
+      }}
+      onPointerCancel={(e) => {
+        fingers.current.delete(e.pointerId)
+        pinch.current = null
+      }}
+    >
       <div ref={box} className="absolute inset-0">
         {done || !h ? (
           <div className="absolute inset-0 overflow-hidden rounded-[3px] bg-night-ink shadow-[var(--shadow-lift)]" style={{ backgroundImage: 'var(--tex-noise)' }}>
