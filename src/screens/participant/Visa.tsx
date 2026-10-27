@@ -31,6 +31,8 @@ export function Visa({ boothId, stampMode, onClose }: { boothId: string; stampMo
   const [save, setSave] = useState<SaveState>('idle')
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const timer = useRef<number>(0)
+  const latest = useRef<[string, string, string] | null>(null)
+  const unsent = useRef(false) // typed, but not yet saved to the server
   const pid = state?.participant.id
   const [paper, animatePaper] = useAnimate()
   const [landed, setLanded] = useState(!stampMode || !!reduce)
@@ -45,11 +47,15 @@ export function Visa({ boothId, stampMode, onClose }: { boothId: string; stampMo
     const serverAt = server ? new Date(server.updatedAt).getTime() : 0
     if (draft && (draft.dirty || draft.at > serverAt)) {
       setPoin(draft.poin)
+      latest.current = draft.poin
+      unsent.current = draft.dirty
       setSave(draft.dirty ? 'pending' : 'saved')
+      if (draft.dirty && navigator.onLine) void push(draft.poin)
     } else {
       setPoin(server?.poin ?? ['', '', ''])
       if (server) setSavedAt(server.updatedAt)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, boothId, poin])
 
   // the stamp lands: one press, ink, the page shakes twice
@@ -71,6 +77,7 @@ export function Visa({ boothId, stampMode, onClose }: { boothId: string; stampMo
     setSave('saving')
     try {
       const at = await api.saveResume(boothId, p)
+      if (latest.current === p) unsent.current = false
       setDraft(pid, boothId, p, false)
       setSavedAt(at)
       setSave('saved')
@@ -85,7 +92,27 @@ export function Visa({ boothId, stampMode, onClose }: { boothId: string; stampMo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [online])
 
-  useEffect(() => () => clearTimeout(timer.current), [])
+  useEffect(() => {
+    const flush = () => {
+      clearTimeout(timer.current)
+      if (unsent.current && latest.current && pid && navigator.onLine) {
+        const p = latest.current
+        api.saveResume(boothId, p).then(() => {
+          setDraft(pid, boothId, p, false)
+          reload()
+        }, () => {})
+      }
+    }
+    const hide = () => document.hidden && flush()
+    document.addEventListener('visibilitychange', hide)
+    window.addEventListener('pagehide', flush)
+    return () => {
+      document.removeEventListener('visibilitychange', hide)
+      window.removeEventListener('pagehide', flush)
+      flush()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pid, boothId])
 
   if (!content || !state || !prog || !poin) return <PageSkeleton />
   const booth = content.booths.find((b) => b.id === boothId)
@@ -102,6 +129,8 @@ export function Visa({ boothId, stampMode, onClose }: { boothId: string; stampMo
     const next = [...poin] as [string, string, string]
     next[i] = v
     setPoin(next)
+    latest.current = next
+    unsent.current = true
     setDraft(state.participant.id, boothId, next, true)
     setSave(navigator.onLine ? 'pending' : 'offline')
     clearTimeout(timer.current)
@@ -232,7 +261,7 @@ export function Visa({ boothId, stampMode, onClose }: { boothId: string; stampMo
                     Point {i + 1}
                   </DocLabel>
                   {ok && <InkIcon.Check className="h-3.5 w-3.5 text-[#2e7d32]" />}
-                  <span className="ml-auto font-mono text-[12px] text-ink/50">{ok ? '' : `${wc}/${min} words`}</span>
+                  <span className={`ml-auto font-mono text-[12px] ${!ok && wc > 0 ? 'font-bold text-[#a35a00]' : 'text-ink/50'}`}>{ok ? '' : wc > 0 ? `${wc}/${min} words · not counted yet` : `${wc}/${min} words`}</span>
                 </div>
                 <textarea
                   ref={i === 0 ? firstLine : undefined}
@@ -253,6 +282,11 @@ export function Visa({ boothId, stampMode, onClose }: { boothId: string; stampMo
             {statusText[save]}
           </p>
 
+          {!locked && okCount < content.rules.poin_per_resume && poin.some((p) => p.trim()) && (
+            <p className="mt-4 border-l-[3px] border-[#a35a00] pl-3 text-[14px] leading-snug text-[#7a4400]" role="status">
+              Only {okCount} of {content.rules.poin_per_resume} points count so far. Each point needs at least {min} words to be counted.
+            </p>
+          )}
           <div className="mt-8">
             <motion.button type="button" whileTap={{ scale: 0.98 }} transition={{ duration: 0.06 }} onClick={finish} className="btn btn-primary w-full">
               Done
