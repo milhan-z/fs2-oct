@@ -1,0 +1,98 @@
+{
+  "voice": "en-US-ChristopherNeural",
+  "lines": {
+    "intro": [
+      ["Welcome to F S squared.", "-8%", "-6Hz", "+8%", 0.34],
+      ["Here is your digital passport, step by step.", "-2%", "-2Hz", "+0%", 0]
+    ],
+    "open": [
+      ["Open the link on your phone,", "+2%", "+1Hz", "+0%", 0.12],
+      ["and tap Open Passport.", "+0%", "+2Hz", "+5%", 0]
+    ],
+    "nrp": [
+      ["Type your N R P,", "+0%", "+1Hz", "+5%", 0.12],
+      ["and tap Continue.", "+2%", "+1Hz", "+0%", 0]
+    ],
+    "autofill": [
+      ["Your department and class year", "+2%", "+1Hz", "+0%", 0.08],
+      ["fill in by themselves.", "+0%", "+1Hz", "+5%", 0.3],
+      ["You can still change them.", "+2%", "+0Hz", "+0%", 0]
+    ],
+    "pin": [
+      ["Choose a four digit PIN,", "+2%", "+1Hz", "+0%", 0.12],
+      ["and create your passport.", "+0%", "+1Hz", "+5%", 0]
+    ],
+    "camera": [
+      ["Allow the camera,", "+2%", "+1Hz", "+0%", 0.14],
+      ["and take one portrait.", "+0%", "+2Hz", "+5%", 0.3],
+      ["It goes on your passport.", "+2%", "+0Hz", "+0%", 0]
+    ],
+    "map": [
+      ["This is the booth map.", "+0%", "+1Hz", "+5%", 0.25],
+      ["It opens on the whole building,", "+2%", "+0Hz", "+0%", 0.1],
+      ["and every red circle is a booth.", "+0%", "+1Hz", "+5%", 0]
+    ],
+    "rooms": [
+      ["Three booths are in the Lounge,", "+2%", "+1Hz", "+0%", 0.12],
+      ["and two are in the Partnership room.", "+2%", "+0Hz", "+0%", 0.3],
+      ["Tap a room to zoom in,", "+2%", "+1Hz", "+0%", 0.12],
+      ["and the arrow to zoom back out.", "+0%", "+1Hz", "+0%", 0]
+    ],
+    "sheet": [
+      ["Tap a pin,", "+0%", "+1Hz", "+5%", 0.12],
+      ["to meet the speaker.", "+2%", "+1Hz", "+0%", 0]
+    ],
+    "qr": [
+      ["At the booth,", "+0%", "+1Hz", "+5%", 0.12],
+      ["open the Q R tab,", "+2%", "+1Hz", "+0%", 0.1],
+      ["and show your Q R permit to the officer.", "+2%", "+0Hz", "+0%", 0]
+    ],
+    "stamp": [
+      ["The officer scans it,", "+2%", "+1Hz", "+0%", 0.1],
+      ["and confirms.", "+0%", "+2Hz", "+5%", 0.32],
+      ["Your stamp lands on your phone,", "+2%", "+1Hz", "+0%", 0.12],
+      ["within seconds.", "-2%", "+2Hz", "+8%", 0]
+    ],
+    "notes": [
+      ["Now write three notes about that booth.", "+2%", "+1Hz", "+0%", 0.3],
+      ["Each note needs at least five words.", "+0%", "+1Hz", "+5%", 0.2],
+      ["Shorter notes do not count.", "-2%", "+0Hz", "+8%", 0.3],
+      ["Everything saves by itself.", "+2%", "+0Hz", "+0%", 0]
+    ],
+    "passport": [
+      ["Collect four stamps, and four sets of notes.", "+2%", "+1Hz", "+0%", 0.3],
+      ["Any four booths will do.", "+0%", "+1Hz", "+5%", 0.3],
+      ["Track it on the Passport tab.", "+2%", "+0Hz", "+0%", 0]
+    ],
+    "feedback": [
+      ["When you are ready, tap Answer and submit.", "+2%", "+1Hz", "+0%", 0.3],
+      ["Rate each session from one to five,", "+2%", "+0Hz", "+0%", 0.1],
+      ["then share your suggestions.", "+2%", "+0Hz", "+0%", 0]
+    ],
+    "submit": [
+      ["Press Submit.", "-4%", "+2Hz", "+12%", 0.3],
+      ["Your passport goes to the committee.", "+2%", "+0Hz", "+0%", 0]
+    ],
+    "status": [
+      ["The Status page shows where it stands.", "+2%", "+1Hz", "+0%", 0.3],
+      ["Awaiting review means the committee has it.", "+0%", "+0Hz", "+0%", 0.2],
+      ["If it needs revision, read the note, fix it, and submit again.", "+2%", "+0Hz", "+0%", 0]
+    ],
+    "approved": [
+      ["Once it is approved,", "+2%", "+1Hz", "+0%", 0.12],
+      ["the stamp turns green.", "+0%", "+2Hz", "+8%", 0]
+    ],
+    "claim": [
+      ["To claim your Stamp for It,", "-2%", "+1Hz", "+5%", 0.25],
+      ["show the committee your Passport page:", "+2%", "+1Hz", "+0%", 0.12],
+      ["your photo, your full N R P,", "+2%", "+0Hz", "+0%", 0.1],
+      ["and your stamps.", "+0%", "+1Hz", "+5%", 0.3],
+      ["Show the Approved status too.", "+0%", "+0Hz", "+0%", 0]
+    ],
+    "outro": [
+      ["F S squared.", "-18%", "-12Hz", "+10%", 0.5],
+      ["Stranger stories", "-10%", "-6Hz", "+0%", 0.1],
+      ["from the other side.", "-14%", "-9Hz", "+5%", 0]
+    ]
+  }
+}
