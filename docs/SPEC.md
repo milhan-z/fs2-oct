@@ -8,7 +8,7 @@ Aplikasi hanya mengurus: **kehadiran (foto), kunjungan booth (cap), resume per b
 
 ## 1. Aturan bisnis (wajib persis)
 
-1. Ada 4 booth (B1–B4), semuanya di **Lounge**, keempatnya wajib.
+1. Ada 5 booth (update 27 Okt): 3 di **Lounge** (South Korea, Japan, Taiwan NTUST) dan 2 di ruang **Partnership** (Germany, Taiwan TISS). Peserta cukup menyelesaikan **4 booth mana saja** (stempel + resume); jumlah booth bisa ditambah/dihapus admin. Peta: tab Whole building (pertama) · Lounge · Partnership.
 2. Login peserta: **NRP + PIN 4 digit**. NRP yang belum terdaftar langsung "buat paspor": nama, departemen, angkatan, PIN (2×). Tidak ada aktivasi, tidak dicek ke RSVP. Walk-in boleh.
 3. Sebelum QR aktif, peserta wajib mengambil **1 foto kehadiran** (selfie, kamera depan). Boleh ulang foto sebelum pengajuan dikirim.
 4. **Cap** = QR peserta di-scan petugas booth lalu dikonfirmasi petugas. Petugas **scan beruntun** (banyak QR berturut-turut masuk antrean di HP petugas), lalu **"Konfirmasi semua"**. Tidak ada auto-confirm. Satu booth hanya sekali per peserta (duplikat diabaikan dengan tanda kuning).

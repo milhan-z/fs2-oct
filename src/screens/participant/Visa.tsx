@@ -6,7 +6,7 @@ import { useParticipant } from '../../app/participant'
 import { useOnline } from '../../components/ui'
 import { api } from '../../data/api'
 import { getDraft, setDraft } from '../../data/drafts'
-import { poinOk, wordCount } from '../../data/rules'
+import { boothRoom, poinOk, wordCount } from '../../data/rules'
 import { fmtTime } from '../../data/time'
 import { sfx, vibrate } from '../../app/sound'
 import { InkIcon } from '../../booklet/icons'
@@ -181,7 +181,7 @@ export function Visa({ boothId, stampMode, onClose }: { boothId: string; stampMo
         </div>
         {visit && (
           <div className="mt-2 text-center">
-            <Tape className="font-mono">Stamped {fmtTime(visit.confirmedAt)} · Lounge</Tape>
+            <Tape className="font-mono">Stamped {fmtTime(visit.confirmedAt)} · {boothRoom(booth, content)}</Tape>
           </div>
         )}
 

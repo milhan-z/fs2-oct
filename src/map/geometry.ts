@@ -1,4 +1,5 @@
 import wallsRaw from './walls.svg?raw'
+import type { RoomLabel } from '../data/types'
 
 export interface Rect {
   x: number
@@ -40,3 +41,15 @@ export const WALLS_INNER = wallsRaw
 
 export const pinPath = (x: number, y: number) =>
   `M${x} ${y + 90} c-52 -68 -75 -98 -75 -135 a75 75 0 0 1 150 0 c0 37 -23 67 -75 135z`
+
+/** Label of the room (one with `batas`) that a point lies in, or null when it is outside all of them. */
+export function roomAt(rooms: RoomLabel[], x: number, y: number): string | null {
+  return rooms.find((r) => r.batas && x >= r.batas.x && x <= r.batas.x + r.batas.w && y >= r.batas.y && y <= r.batas.y + r.batas.h)?.label ?? null
+}
+
+/** The camera that frames a room: the Lounge has its tuned one, any other room gets the same size around its booths. */
+export function roomCamera(room: RoomLabel, points: { x: number; y: number }[]): Rect {
+  if (room.sorot || !room.batas) return CAM_LOUNGE
+  const cy = points.length ? points.reduce((s, p) => s + p.y, 0) / points.length : room.batas.y + room.batas.h / 2
+  return { x: room.batas.x - 140, y: cy - CAM_LOUNGE.h / 2, w: CAM_LOUNGE.w, h: CAM_LOUNGE.h }
+}

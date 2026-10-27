@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { api } from '../../data/api'
 import { Loading } from '../../components/ui'
 import { useContent } from '../../app/providers'
-import type { Booth, Facility, Question, Speaker } from '../../data/types'
-import { LOUNGE_BOUNDS, PLAN, WALLS_INNER, pinPath, viewBoxOf, type Rect } from '../../map/geometry'
+import type { Booth, Facility, Question, RoomLabel, Speaker } from '../../data/types'
+import { LOUNGE_BOUNDS, PLAN, WALLS_INNER, pinPath, roomAt, viewBoxOf, type Rect } from '../../map/geometry'
 import { StampImg } from '../../components/decor'
 import { PhotoCropDialog } from './PhotoCropDialog'
 
@@ -75,7 +75,7 @@ export function ContentEditor() {
       </p>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(320px,420px)_1fr]">
-        <MapEditor booths={booths} facilities={content.facilities} onSaved={done} />
+        <MapEditor booths={booths} facilities={content.facilities} rooms={content.rooms} onSaved={done} />
         <div className="flex flex-col gap-5">
           <StaffPinCard />
           {booths.map((b) => (
@@ -125,7 +125,8 @@ function StaffPinCard() {
 
 type Sel = { kind: 'booth' | 'facility'; id: string }
 
-function MapEditor({ booths, facilities, onSaved }: { booths: Booth[]; facilities: Facility[]; onSaved: (m?: string) => void }) {
+function MapEditor({ booths, facilities, rooms, onSaved }: { booths: Booth[]; facilities: Facility[]; rooms: RoomLabel[]; onSaved: (m?: string) => void }) {
+  const zones = rooms.filter((r) => r.batas)
   const svgRef = useRef<SVGSVGElement>(null)
   const [sel, setSel] = useState<Sel | null>(null)
   const [drag, setDrag] = useState<{ sel: Sel; x: number; y: number } | null>(null)
@@ -163,7 +164,11 @@ function MapEditor({ booths, facilities, onSaved }: { booths: Booth[]; facilitie
       const p = px ?? { x: c.cx, y: c.cy }
       return clampCam({ w, cx: p.x - (p.x - c.cx) * real, cy: p.y - (p.y - c.cy) * real })
     })
-  const showLounge = () => setCam({ cx: LOUNGE_BOUNDS.x + LOUNGE_BOUNDS.w / 2, cy: LOUNGE_BOUNDS.y + LOUNGE_BOUNDS.h / 2, w: LOUNGE_BOUNDS.w + 600 })
+  const showRoom = (z: RoomLabel) => {
+    const B = z.batas!
+    const inside = booths.filter((b) => roomAt([z], b.x, b.y))
+    setCam({ cx: B.x + B.w / 2, cy: z.sorot || !inside.length ? B.y + B.h / 2 : inside.reduce((s, b) => s + b.y, 0) / inside.length, w: B.w + 600 })
+  }
   const showBuilding = () => setCam({ cx: PLAN.w / 2, cy: PLAN.h / 2, w: (PLAN.h + 160) * (size.w / size.h) })
 
   const toSvg = (e: { clientX: number; clientY: number }) => {
@@ -235,9 +240,11 @@ function MapEditor({ booths, facilities, onSaved }: { booths: Booth[]; facilitie
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-[17px] font-bold">Map points</h2>
         <div className="flex gap-1.5">
-          <button type="button" className="min-h-10 rounded-lg border border-[#d5cabd] px-3 text-[13px]" onClick={showLounge}>
-            Lounge
-          </button>
+          {zones.map((z) => (
+            <button key={z.label} type="button" className="min-h-10 rounded-lg border border-[#d5cabd] px-3 text-[13px]" onClick={() => showRoom(z)}>
+              {z.label}
+            </button>
+          ))}
           <button type="button" className="min-h-10 rounded-lg border border-[#d5cabd] px-3 text-[13px]" onClick={showBuilding}>
             Whole building
           </button>
@@ -287,7 +294,9 @@ function MapEditor({ booths, facilities, onSaved }: { booths: Booth[]; facilitie
           aria-label="Map point editor"
         >
           <g className="text-cream" style={{ opacity: 0.5 }} dangerouslySetInnerHTML={{ __html: WALLS_INNER }} />
-          <rect x={LOUNGE_BOUNDS.x} y={LOUNGE_BOUNDS.y} width={LOUNGE_BOUNDS.w} height={LOUNGE_BOUNDS.h} fill="none" stroke="#F9B018" strokeWidth="8" strokeDasharray="30 20" />
+          {zones.map((z) => (
+            <rect key={z.label} x={z.batas!.x} y={z.batas!.y} width={z.batas!.w} height={z.batas!.h} fill="none" stroke="#F9B018" strokeWidth="8" strokeDasharray="30 20" />
+          ))}
           {booths.map((b) => {
             const s: Sel = { kind: 'booth', id: b.id }
             const p = pos(s, b.x, b.y)

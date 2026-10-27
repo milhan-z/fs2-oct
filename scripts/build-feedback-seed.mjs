@@ -25,11 +25,13 @@ const out = [
   q('m4', 'Material Quality', 'skala_1_5', true, 'Material feedback', POOR),
   q('m5', 'Criticism and Suggestions for Material', 'teks', true, 'Material feedback'),
 ]
+// questions are keyed by booth id (b4-…), so a booth keeps its answers whatever its position in the list; the heading
+// number follows the booth order of the event.
 seed.booths.forEach((b, i) => {
   const s = b.pemateri?.[0]
   const who = s && s.nama !== 'Speaker TBA' ? `${s.nama} · ${b.nama}` : `${b.nama} · speaker to be announced`
   const section = `Speaker #${i + 1} · ${who}`
-  const k = `b${i + 1}`
+  const k = b.id.toLowerCase()
   out.push(
     q(`${k}-presentation`, 'Way of Presentation', 'skala_1_5', false, section, POOR),
     q(`${k}-scope`, 'Clearly Defined Content Scope', 'skala_1_5', false, section, POOR),

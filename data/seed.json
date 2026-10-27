@@ -66,17 +66,87 @@
           "cerita": "Placeholder: Rahmat will share his semester exchange at Gyeongsang National University — from preparing the documents and adapting to classes in Korea to the little things no guidebook mentions.",
           "placeholder": true
         }
-      ]
+      ],
+      "sort": 1
+    },
+    {
+      "id": "B4",
+      "slug": "japan",
+      "nama": "Japan",
+      "region": "Asia",
+      "stamp": null,
+      "titik": {
+        "x": 1215,
+        "y": 3442
+      },
+      "placeholder_posisi": true,
+      "pemateri": [
+        {
+          "nama": "Tavasya Alia Anjani",
+          "universitas": "Shibaura Institute of Technology",
+          "program": "Communal Study Excursion Goes to Japan",
+          "foto": null,
+          "cerita": "Placeholder: Tavasya (Sistem Informasi, class of 2024) will share the Communal Study Excursion to Japan and Shibaura Institute of Technology — the committee will add the full story.",
+          "placeholder": true
+        }
+      ],
+      "sort": 2
+    },
+    {
+      "id": "B5",
+      "slug": "taiwan-ntust",
+      "nama": "Taiwan (NTUST)",
+      "region": "Asia",
+      "stamp": "/stamps/stamp-taiwan.png",
+      "titik": {
+        "x": 928,
+        "y": 3897
+      },
+      "placeholder_posisi": true,
+      "pemateri": [
+        {
+          "nama": "Gerald Mahapranaja Pillian",
+          "universitas": "National Taiwan University of Science & Technology (NTUST)",
+          "program": "Semester Exchange Program Fall 2025",
+          "foto": null,
+          "cerita": "Placeholder: Gerald (Sistem Informasi, class of 2022) will share the semester exchange at NTUST in Taiwan — the committee will add the full story.",
+          "placeholder": true
+        }
+      ],
+      "sort": 3
+    },
+    {
+      "id": "B3",
+      "slug": "germany",
+      "nama": "Germany",
+      "region": "Europe",
+      "stamp": "/stamps/stamp-jerman.png",
+      "titik": {
+        "x": 250,
+        "y": 2060
+      },
+      "placeholder_posisi": true,
+      "pemateri": [
+        {
+          "nama": "Narendra Nafi Rahadaian",
+          "universitas": "Hochschule Wismar, University of Applied Sciences: Technology, Business and Design",
+          "program": "Double Degree Summer Semester Program Hochschule Wismar 2026",
+          "foto": null,
+          "cerita": "Placeholder: Narendra (Teknik Perkapalan, class of 2023) will share the double degree summer semester at Hochschule Wismar — the committee will add the full story.",
+          "placeholder": true
+        }
+      ],
+      "sort": 4
     },
     {
       "id": "B2",
       "slug": "taiwan",
-      "nama": "Taiwan",
+      "nama": "Taiwan (TISS)",
       "region": "Asia",
       "stamp": "/stamps/stamp-taiwan.png",
       "titik": {
-        "x": 1225,
-        "y": 2980
+        "x": 250,
+        "y": 2330
       },
       "placeholder_posisi": true,
       "pemateri": [
@@ -88,51 +158,8 @@
           "cerita": "Placeholder: Tegar will talk about the international internship in Taiwan — how he landed the opportunity, what daily life looks like there, and what students should prepare if they want to try the internship route.",
           "placeholder": true
         }
-      ]
-    },
-    {
-      "id": "B3",
-      "slug": "germany",
-      "nama": "Germany",
-      "region": "Europe",
-      "stamp": "/stamps/stamp-jerman.png",
-      "titik": {
-        "x": 930,
-        "y": 3600
-      },
-      "placeholder_posisi": true,
-      "pemateri": [
-        {
-          "nama": "Zahrina Nur Amalina Syamsudin",
-          "universitas": "Hochschule Wismar, University of Applied Sciences",
-          "program": "Double Degree Summer Semester Program Hochschule Wismar 2026",
-          "foto": null,
-          "cerita": "Placeholder: Zahrina will walk through her double degree journey at Hochschule Wismar — the selection process, life in a small German town, and tips for surviving the summer semester.",
-          "placeholder": true
-        }
-      ]
-    },
-    {
-      "id": "B4",
-      "slug": "booth-4",
-      "nama": "Booth 4",
-      "region": "TBA",
-      "stamp": null,
-      "titik": {
-        "x": 1225,
-        "y": 3600
-      },
-      "placeholder_posisi": true,
-      "pemateri": [
-        {
-          "nama": "Speaker TBA",
-          "universitas": "TBA",
-          "program": "TBA",
-          "foto": null,
-          "cerita": "Placeholder: details of the fourth booth will be announced by the committee.",
-          "placeholder": true
-        }
-      ]
+      ],
+      "sort": 5
     }
   ],
   "fasilitas": [
@@ -161,14 +188,13 @@
       "y": 520
     },
     {
-      "label": "Mobility",
-      "x": 1400,
-      "y": 470
-    },
-    {
-      "label": "Partnership",
-      "x": 290,
-      "y": 1860
+      "label": "Front Office",
+      "x": 1065,
+      "y": 4680,
+      "pintu_masuk": {
+        "x": 900,
+        "y": 4740
+      }
     },
     {
       "label": "Lounge",
@@ -183,12 +209,14 @@
       }
     },
     {
-      "label": "Front Office",
-      "x": 1065,
-      "y": 4680,
-      "pintu_masuk": {
-        "x": 900,
-        "y": 4740
+      "label": "Partnership",
+      "x": 290,
+      "y": 1860,
+      "batas": {
+        "x": 20,
+        "y": 1262,
+        "w": 462,
+        "h": 1230
       }
     }
   ],
@@ -282,91 +310,11 @@
       "placeholder": false
     },
     {
-      "id": "b2-presentation",
-      "teks": "Way of Presentation",
-      "tipe": "skala_1_5",
-      "wajib": false,
-      "section": "Speaker #2 · Tegar Anugrah Firdaus · Taiwan",
-      "labelLow": "Poor",
-      "labelHigh": "Excellent",
-      "placeholder": false
-    },
-    {
-      "id": "b2-scope",
-      "teks": "Clearly Defined Content Scope",
-      "tipe": "skala_1_5",
-      "wajib": false,
-      "section": "Speaker #2 · Tegar Anugrah Firdaus · Taiwan",
-      "labelLow": "Poor",
-      "labelHigh": "Excellent",
-      "placeholder": false
-    },
-    {
-      "id": "b2-interactive",
-      "teks": "Interactive Presentation",
-      "tipe": "skala_1_5",
-      "wajib": false,
-      "section": "Speaker #2 · Tegar Anugrah Firdaus · Taiwan",
-      "labelLow": "Poor",
-      "labelHigh": "Excellent",
-      "placeholder": false
-    },
-    {
-      "id": "b2-time",
-      "teks": "Effective and Efficient Use of Time",
-      "tipe": "skala_1_5",
-      "wajib": false,
-      "section": "Speaker #2 · Tegar Anugrah Firdaus · Taiwan",
-      "labelLow": "Poor",
-      "labelHigh": "Excellent",
-      "placeholder": false
-    },
-    {
-      "id": "b3-presentation",
-      "teks": "Way of Presentation",
-      "tipe": "skala_1_5",
-      "wajib": false,
-      "section": "Speaker #3 · Zahrina Nur Amalina Syamsudin · Germany",
-      "labelLow": "Poor",
-      "labelHigh": "Excellent",
-      "placeholder": false
-    },
-    {
-      "id": "b3-scope",
-      "teks": "Clearly Defined Content Scope",
-      "tipe": "skala_1_5",
-      "wajib": false,
-      "section": "Speaker #3 · Zahrina Nur Amalina Syamsudin · Germany",
-      "labelLow": "Poor",
-      "labelHigh": "Excellent",
-      "placeholder": false
-    },
-    {
-      "id": "b3-interactive",
-      "teks": "Interactive Presentation",
-      "tipe": "skala_1_5",
-      "wajib": false,
-      "section": "Speaker #3 · Zahrina Nur Amalina Syamsudin · Germany",
-      "labelLow": "Poor",
-      "labelHigh": "Excellent",
-      "placeholder": false
-    },
-    {
-      "id": "b3-time",
-      "teks": "Effective and Efficient Use of Time",
-      "tipe": "skala_1_5",
-      "wajib": false,
-      "section": "Speaker #3 · Zahrina Nur Amalina Syamsudin · Germany",
-      "labelLow": "Poor",
-      "labelHigh": "Excellent",
-      "placeholder": false
-    },
-    {
       "id": "b4-presentation",
       "teks": "Way of Presentation",
       "tipe": "skala_1_5",
       "wajib": false,
-      "section": "Speaker #4 · Booth 4 · speaker to be announced",
+      "section": "Speaker #2 · Tavasya Alia Anjani · Japan",
       "labelLow": "Poor",
       "labelHigh": "Excellent",
       "placeholder": false
@@ -376,7 +324,7 @@
       "teks": "Clearly Defined Content Scope",
       "tipe": "skala_1_5",
       "wajib": false,
-      "section": "Speaker #4 · Booth 4 · speaker to be announced",
+      "section": "Speaker #2 · Tavasya Alia Anjani · Japan",
       "labelLow": "Poor",
       "labelHigh": "Excellent",
       "placeholder": false
@@ -386,7 +334,7 @@
       "teks": "Interactive Presentation",
       "tipe": "skala_1_5",
       "wajib": false,
-      "section": "Speaker #4 · Booth 4 · speaker to be announced",
+      "section": "Speaker #2 · Tavasya Alia Anjani · Japan",
       "labelLow": "Poor",
       "labelHigh": "Excellent",
       "placeholder": false
@@ -396,7 +344,127 @@
       "teks": "Effective and Efficient Use of Time",
       "tipe": "skala_1_5",
       "wajib": false,
-      "section": "Speaker #4 · Booth 4 · speaker to be announced",
+      "section": "Speaker #2 · Tavasya Alia Anjani · Japan",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b5-presentation",
+      "teks": "Way of Presentation",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #3 · Gerald Mahapranaja Pillian · Taiwan (NTUST)",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b5-scope",
+      "teks": "Clearly Defined Content Scope",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #3 · Gerald Mahapranaja Pillian · Taiwan (NTUST)",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b5-interactive",
+      "teks": "Interactive Presentation",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #3 · Gerald Mahapranaja Pillian · Taiwan (NTUST)",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b5-time",
+      "teks": "Effective and Efficient Use of Time",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #3 · Gerald Mahapranaja Pillian · Taiwan (NTUST)",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b3-presentation",
+      "teks": "Way of Presentation",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #4 · Narendra Nafi Rahadaian · Germany",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b3-scope",
+      "teks": "Clearly Defined Content Scope",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #4 · Narendra Nafi Rahadaian · Germany",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b3-interactive",
+      "teks": "Interactive Presentation",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #4 · Narendra Nafi Rahadaian · Germany",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b3-time",
+      "teks": "Effective and Efficient Use of Time",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #4 · Narendra Nafi Rahadaian · Germany",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b2-presentation",
+      "teks": "Way of Presentation",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #5 · Tegar Anugrah Firdaus · Taiwan (TISS)",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b2-scope",
+      "teks": "Clearly Defined Content Scope",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #5 · Tegar Anugrah Firdaus · Taiwan (TISS)",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b2-interactive",
+      "teks": "Interactive Presentation",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #5 · Tegar Anugrah Firdaus · Taiwan (TISS)",
+      "labelLow": "Poor",
+      "labelHigh": "Excellent",
+      "placeholder": false
+    },
+    {
+      "id": "b2-time",
+      "teks": "Effective and Efficient Use of Time",
+      "tipe": "skala_1_5",
+      "wajib": false,
+      "section": "Speaker #5 · Tegar Anugrah Firdaus · Taiwan (TISS)",
       "labelLow": "Poor",
       "labelHigh": "Excellent",
       "placeholder": false

@@ -83,11 +83,13 @@ try {
   await wait(400)
   await screen('07-map')
   await page.getByRole('button', { name: 'Skip tour' }).click({ timeout: 5000 }).catch(() => {})
-  await transition('t08-map-lounge-to-building', () => page.getByRole('tab', { name: 'Whole building' }).click(), 700)
+  // the map opens on the whole building; the room tabs zoom into the Lounge or the Partnership room
   await screen('08-map-building')
-  await page.getByRole('tab', { name: 'Lounge' }).click()
+  await transition('t08-map-building-to-partnership', () => page.getByRole('tab', { name: /^Partnership/ }).click(), 700)
+  await screen('08b-map-partnership')
+  await page.getByRole('tab', { name: /^Lounge/ }).click()
   await wait(600)
-  await transition('t09-pin-to-popup', () => page.getByRole('button', { name: /Taiwan booth/ }).click(), 900)
+  await transition('t09-pin-to-popup', () => page.getByRole('button', { name: /Japan booth/ }).click(), 900)
   await screen('09-popup')
   notes.popupStamp = await page.evaluate(() => {
     const img = document.querySelector('[role="dialog"] img[alt$="stamp"]')

@@ -6,6 +6,7 @@ import { useParticipant, useSignOut } from '../../app/participant'
 import { startTour } from '../../booklet/CoachTour'
 import { LogoStrip } from '../../components/decor'
 import { fmtDeadline, fmtTime } from '../../data/time'
+import { roomSummary } from '../../data/rules'
 import { setSoundEnabled, soundEnabled, sfx } from '../../app/sound'
 import { InkIcon } from '../../booklet/icons'
 import { Folio, PageSkeleton } from '../../booklet/print'
@@ -31,7 +32,7 @@ export function Guide() {
   const steps = [
     'Open your passport with your NRP + a 4-digit PIN (new passports are created on the spot).',
     'Take one attendance photo — your QR activates after that.',
-    `Visit ${content.booths.length > rules.jumlah_booth_wajib ? `at least ${rules.jumlah_booth_wajib} of the ${content.booths.length}` : `all ${rules.jumlah_booth_wajib}`} booths in the Lounge, in any order. Show your QR, the officer confirms, and your passport gets stamped.`,
+    `Visit ${content.booths.length > rules.jumlah_booth_wajib ? `at least ${rules.jumlah_booth_wajib} of the ${content.booths.length}` : `all ${rules.jumlah_booth_wajib}`} booths (${roomSummary(content)}), in any order. Show your QR, the officer confirms, and your passport gets stamped.`,
     `Write notes for ${rules.jumlah_booth_wajib} booths: ${rules.poin_per_resume} points, at least ${rules.min_kata_per_poin} words each. You can do it later.`,
     'Fill in the feedback, then Submit from the Exit page.',
     'On your way out, show your Passport page (your stamps) to the committee at the exit.',

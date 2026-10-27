@@ -8,6 +8,7 @@ import { boothCode, TicketPaper } from '../../booklet/print'
 import { useParticipant } from '../../app/participant'
 import { startTour } from '../../booklet/CoachTour'
 import { onboardedKey } from './Photo'
+import { boothRoom, roomCounts, roomSummary } from '../../data/rules'
 
 // a) lights  b) silhouette  c) plan draws  d) zoom to Lounge  e) pins drop  f) note
 const TIMELINE = [0, 1100, 2100, 3700, 4700, 5500]
@@ -63,8 +64,10 @@ export function Onboarding() {
     nav('/map', { replace: true })
   }
 
-  const booths = content ? [...content.booths].sort((a, b) => a.sort - b.sort) : []
-  const rooms = content?.rooms.filter((r) => !r.batas) ?? []
+  // the camera zooms to the Lounge, so its pins are the ones that drop; every other room keeps its label on the plan
+  const counts = content ? roomCounts(content) : []
+  const booths = content ? [...content.booths].sort((a, b) => a.sort - b.sort).filter((b) => boothRoom(b, content) === (content.rooms.find((r) => r.sorot)?.label ?? 'Lounge')) : []
+  const rooms = content?.rooms.filter((r) => !r.sorot) ?? []
   const L = LOUNGE_BOUNDS
   const drawn = phase >= 2
 
@@ -118,7 +121,7 @@ export function Onboarding() {
 
       {/* c–e) plan */}
       <motion.div className="relative z-[5] w-full flex-1" initial={{ opacity: 0 }} animate={{ opacity: drawn ? 1 : 0 }} transition={{ duration: 0.4 }}>
-        <svg viewBox={viewBoxOf(CAM_BUILDING)} preserveAspectRatio="xMidYMid meet" className="absolute inset-0 h-full w-full" role="img" aria-label="Global Kampong floor plan: all booths are in the Lounge">
+        <svg viewBox={viewBoxOf(CAM_BUILDING)} preserveAspectRatio="xMidYMid meet" className="absolute inset-0 h-full w-full" role="img" aria-label={`Global Kampong floor plan: ${content ? roomSummary(content) : ""}`}>
           <g ref={camRef}>
             <g className={`ob-draw text-cream ${drawn ? 'on' : ''}`} style={{ opacity: 0.7 }} dangerouslySetInnerHTML={{ __html: walls }} />
             {rooms.map((r, i) => (
@@ -168,8 +171,8 @@ export function Onboarding() {
           <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.45, ease: EASE }} className="absolute inset-x-4 bottom-4 z-10">
             <TicketPaper className="px-5 pt-6 pb-5">
               <p className="font-mono text-[11px] tracking-[0.12em] text-ink/60 uppercase">Floor plan</p>
-              <p className="mt-1 font-serif text-[22px] leading-tight font-bold text-ink">All booths are in the Lounge</p>
-              <p className="mt-2 text-[15px] leading-[22px] text-ink/75">Enter through the Front Office — the Lounge is right ahead. Collect all 4 visas, in any order.</p>
+              <p className="mt-1 font-serif text-[22px] leading-tight font-bold text-ink">{counts.length > 1 ? 'Booths in two rooms' : 'All booths are in the Lounge'}</p>
+              <p className="mt-2 text-[15px] leading-[22px] text-ink/75">{content && counts.length > 1 ? `${roomSummary(content)[0].toUpperCase()}${roomSummary(content).slice(1)}. Switch rooms with the tabs on the map, then collect ${content.rules.jumlah_booth_wajib} visas from any of them, in any order.` : `Enter through the Front Office — the Lounge is right ahead. Collect ${content ? content.rules.jumlah_booth_wajib : 4} visas, in any order.`}</p>
               <motion.button type="button" onClick={finish} whileTap={{ scale: 0.98 }} transition={{ duration: 0.06 }} className="btn btn-primary mt-5 w-full">
                 Start
               </motion.button>

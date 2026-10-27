@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router'
 import { useContent } from '../../app/providers'
 import { useParticipant } from '../../app/participant'
 import { RetroTV } from '../../components/decor'
-import { loungeSpot, resumeDone } from '../../data/rules'
+import { boothRoom, resumeDone, roomSpot } from '../../data/rules'
 import { fmtTime } from '../../data/time'
 import { InkIcon } from '../../booklet/icons'
 import { InkStamp, Tape } from '../../booklet/print'
@@ -88,7 +88,9 @@ export function BoothSheet({ boothId, origin, onClose }: { boothId: string; orig
               <h2 id="booth-title" className="mt-1 font-serif text-[30px] leading-[34px] font-bold">
                 {booth.nama}
               </h2>
-              <Tape className="mt-2">Lounge · {loungeSpot(booth.x, booth.y, content)}</Tape>
+              <Tape className="mt-2">
+                {boothRoom(booth, content)} · {roomSpot(booth.x, booth.y, content)}
+              </Tape>
             </div>
             <InkStamp src={booth.stamp} seed={booth.id} size={104} alt={`${booth.nama} stamp`} pending={!visit} />
           </div>

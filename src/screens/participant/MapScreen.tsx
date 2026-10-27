@@ -4,12 +4,12 @@ import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../../app/providers'
 import { useParticipant } from '../../app/participant'
-import { MapView, type BoothStatus, type MapMode } from '../../map/MapView'
+import { BUILDING, MapView, type BoothStatus, type MapMode } from '../../map/MapView'
 import { BoothSheet } from './BoothSheet'
 import { FadeImg, Tape } from '../../booklet/print'
 import { setOrigin } from '../../booklet/pages'
 import type { Content, MyState } from '../../data/types'
-import type { Progress } from '../../data/rules'
+import { boothRoom, roomCounts, type Progress } from '../../data/rules'
 
 const MODE_KEY = 'fs2.mapMode'
 const UNFOLDED_KEY = 'fs2.mapUnfolded'
@@ -25,13 +25,20 @@ export function MapScreen() {
   const { state, prog } = useParticipant()
   const nav = useNavigate()
   const [params, setParams] = useSearchParams()
-  const [mode, setMode] = useState<MapMode>(() => (sessionStorage.getItem(MODE_KEY) as MapMode) || 'lounge')
+  // the whole building comes first; the room tabs (Lounge, Partnership, …) zoom in on one room
+  const [mode, setMode] = useState<MapMode>(() => sessionStorage.getItem(MODE_KEY) || BUILDING)
   const openBooth = params.get('booth')
   const [origin, setOriginRect] = useState<DOMRect | null>(null)
 
   useEffect(() => {
     sessionStorage.setItem(MODE_KEY, mode)
   }, [mode])
+
+  // opening a booth (e.g. from "Next up") first shows the room it stands in
+  useEffect(() => {
+    const b = content?.booths.find((x) => x.id === openBooth)
+    if (b && content) setMode(boothRoom(b, content))
+  }, [openBooth, content])
 
   const status = useMemo(() => {
     const s: Record<string, BoothStatus> = {}
@@ -41,10 +48,13 @@ export function MapScreen() {
 
   if (!content || !state || !prog) return <MapSkeleton />
   const booths = [...content.booths].sort((a, b) => a.sort - b.sort)
+  const rooms = roomCounts(content)
+  const tabs: { key: MapMode; label: string; n?: number }[] = [{ key: BUILDING, label: 'Whole building' }, ...rooms.map((r) => ({ key: r.label, label: r.label, n: r.n }))]
+  const shownMode = tabs.some((x) => x.key === mode) ? mode : BUILDING
   const next = nextStep(content, state, prog)
   const map = (interactive: boolean) => (
     <MapView
-      mode={mode}
+      mode={shownMode}
       booths={booths}
       facilities={content.facilities}
       rooms={content.rooms}
@@ -57,7 +67,7 @@ export function MapScreen() {
             }
           : undefined
       }
-      onLounge={() => setMode('lounge')}
+      onRoom={(label) => setMode(label)}
       className="absolute inset-0 h-full w-full"
     />
   )
@@ -83,11 +93,12 @@ export function MapScreen() {
         <span className="bg-yellow px-2.5 py-1 text-[14px] leading-tight font-semibold text-navy shadow-[var(--shadow-contact)]">{next.label}</span>
       </button>
 
-      <div role="tablist" aria-label="Map view" className="mx-4 mt-4 flex gap-6">
-        {(['lounge', 'building'] as const).map((m) => (
-          <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)} className={`relative min-h-11 text-[15px] ${mode === m ? 'font-semibold text-cream' : 'text-cream/60'}`}>
-            {m === 'lounge' ? 'Lounge' : 'Whole building'}
-            {mode === m && <motion.span layoutId="map-tab-ink" className="absolute inset-x-0 bottom-1.5 h-[2px] bg-yellow" transition={{ duration: 0.2, ease: EASE }} />}
+      <div role="tablist" aria-label="Map view" className="mx-4 mt-4 flex gap-5">
+        {tabs.map((m) => (
+          <button key={m.key} role="tab" aria-selected={shownMode === m.key} onClick={() => setMode(m.key)} className={`relative min-h-11 text-[15px] whitespace-nowrap ${shownMode === m.key ? 'font-semibold text-cream' : 'text-cream/60'}`}>
+            {m.label}
+            {m.n != null && <span className="ml-1 font-mono text-[12px] text-yellow">{m.n}</span>}
+            {shownMode === m.key && <motion.span layoutId="map-tab-ink" className="absolute inset-x-0 bottom-1.5 h-[2px] bg-yellow" transition={{ duration: 0.2, ease: EASE }} />}
           </button>
         ))}
       </div>
@@ -96,14 +107,14 @@ export function MapScreen() {
 
       {/* the legend sits under the map, never on top of it */}
       <ul className="mx-4 mt-7 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] font-semibold text-cream/90" aria-label="Pin legend">
-        {mode === 'lounge' ? (
+        {shownMode !== BUILDING ? (
           <>
             <li>○ Not yet</li>
             <li className="text-[#ff8a80]">● Stamped</li>
             <li className="text-ok-bright">● Notes done</li>
           </>
         ) : (
-          <li>Tap the Lounge to zoom in</li>
+          <li>Tap a room, or use the tabs, to zoom in</li>
         )}
       </ul>
 

@@ -1,5 +1,6 @@
 import type { Content, MyState } from './types'
 import { nowMs } from './time'
+import { roomAt } from '../map/geometry'
 
 export function wordCount(s: string): number {
   return s.trim().split(/\s+/).filter(Boolean).length
@@ -70,11 +71,32 @@ export function submissionCode(nrp: string, version: number): string {
   return `FS2-${nrp.slice(-4)}-${String.fromCharCode(64 + Math.min(version, 26))}`
 }
 
-/** "top right" etc. — relative position inside the Lounge, derived from the pin point */
-export function loungeSpot(x: number, y: number, content: Content): string {
-  const lounge = content.rooms.find((r) => r.batas)?.batas
-  if (!lounge) return ''
-  const h = x < lounge.x + lounge.w / 2 ? 'left' : 'right'
-  const v = y < lounge.y + lounge.h / 2 ? 'top' : 'bottom'
-  return `${v} ${h}`
+/** The room (a label with `batas`) a booth stands in; booths outside every room count as the Lounge. */
+export function boothRoom(b: { x: number; y: number }, content: Pick<Content, 'rooms'>): string {
+  return roomAt(content.rooms, b.x, b.y) ?? content.rooms.find((r) => r.sorot)?.label ?? 'Lounge'
+}
+
+/** Rooms that have booths, in map order, with how many: [{label: 'Lounge', n: 3}, {label: 'Partnership', n: 2}]. */
+export function roomCounts(content: Pick<Content, 'rooms' | 'booths'>): { label: string; n: number }[] {
+  return content.rooms
+    .filter((r) => r.batas)
+    .map((r) => ({ label: r.label, n: content.booths.filter((b) => boothRoom(b, content) === r.label).length }))
+    .filter((r) => r.n > 0)
+}
+
+/** "3 in the Lounge and 2 in the Partnership room" */
+export function roomSummary(content: Pick<Content, 'rooms' | 'booths'>): string {
+  const name = (l: string) => (l === 'Lounge' ? 'the Lounge' : `the ${l} room`)
+  return roomCounts(content)
+    .map((r) => `${r.n} in ${name(r.label)}`)
+    .join(' and ')
+}
+
+/** "top right" etc. — relative position inside the booth's room, derived from the pin point (a narrow room only top/bottom) */
+export function roomSpot(x: number, y: number, content: Content): string {
+  const room = content.rooms.find((r) => r.batas && roomAt([r], x, y))?.batas
+  if (!room) return ''
+  const v = y < room.y + room.h / 2 ? 'top' : 'bottom'
+  if (room.w < room.h * 0.5) return v
+  return `${v} ${x < room.x + room.w / 2 ? 'left' : 'right'}`
 }

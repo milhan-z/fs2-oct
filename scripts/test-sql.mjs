@@ -62,7 +62,7 @@ ok(api.v, 'anon can execute get_my_state')
 
 // --- content
 const content = await call('get_content', [])
-ok(content.booths.length === 4 && content.speakers.length === 4 && content.questions.length === 21, 'get_content returns seed')
+ok(content.booths.length === 5 && content.speakers.length === 5 && content.questions.length === 25, 'get_content returns seed')
 ok(!JSON.stringify(content).includes('admin_password_hash') && !JSON.stringify(content).includes('$2a$'), 'content has no secrets')
 
 // --- participant
@@ -239,7 +239,7 @@ ok((await one(`select count(*)::int as n from public.participants where id = $1`
 
 // --- feedback questions: add / reorder / delete, any number
 for (let i = 4; i <= 12; i++) await call('admin_upsert_question', [at, JSON.stringify({ id: `qx${i}`, teks: `Extra question number ${i}`, tipe: i % 2 ? 'teks' : 'skala_1_5', wajib: false, sort: i })])
-ok((await call('get_content', [])).questions.length === 30, 'admin adds many feedback questions')
+ok((await call('get_content', [])).questions.length === 34, 'admin adds many feedback questions')
 await expectErr('admin_upsert_question', [at, JSON.stringify({ id: 'bad id', teks: 'Valid text here', tipe: 'teks', wajib: true, sort: 1 })], 'invalid', 'bad question id rejected')
 await expectErr('admin_upsert_question', [at, JSON.stringify({ id: 'qz', teks: 'hi', tipe: 'teks', wajib: true, sort: 1 })], 'invalid', 'too-short question rejected')
 await call('admin_set_question_order', [at, ['qx12', 'm1']])

@@ -96,6 +96,9 @@ export function boothCode(nama: string, sort: number): string {
   const KNOWN: Record<string, string> = { korea: 'KR', taiwan: 'TW', germany: 'DE', japan: 'JP', china: 'CN', netherlands: 'NL', australia: 'AU', france: 'FR', 'united kingdom': 'UK', singapore: 'SG', malaysia: 'MY' }
   const n = nama.toLowerCase()
   if (n.startsWith('booth')) return String(sort)
+  // two booths of one country are told apart by the name in brackets: "Taiwan (NTUST)" → NT
+  const tag = /\(([A-Za-z]{2,})[^)]*\)/.exec(nama)
+  if (tag) return tag[1].slice(0, 2).toUpperCase()
   for (const [k, v] of Object.entries(KNOWN)) if (n.includes(k)) return v
   return nama.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || String(sort)
 }
