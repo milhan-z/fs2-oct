@@ -51,5 +51,6 @@ export function roomAt(rooms: RoomLabel[], x: number, y: number): string | null 
 export function roomCamera(room: RoomLabel, points: { x: number; y: number }[]): Rect {
   if (room.sorot || !room.batas) return CAM_LOUNGE
   const cy = points.length ? points.reduce((s, p) => s + p.y, 0) / points.length : room.batas.y + room.batas.h / 2
-  return { x: room.batas.x - 140, y: cy - CAM_LOUNGE.h / 2, w: CAM_LOUNGE.w, h: CAM_LOUNGE.h }
+  // a little headroom above the booths, so the room's name and the Back button never sit on top of each other
+  return { x: room.batas.x - 140, y: Math.min(cy - CAM_LOUNGE.h / 2 - 220, room.batas.y - 200), w: CAM_LOUNGE.w, h: CAM_LOUNGE.h }
 }

@@ -131,7 +131,7 @@ export function MapView({ mode, booths, facilities, rooms, status, onPin, onRoom
                   {z.label.toUpperCase()}
                 </text>
               ) : (
-                <text x={B.x + B.w / 2} y={B.y + 112} textAnchor="middle" fontFamily="Libre Baskerville" fontWeight="700" fontSize="70" letterSpacing="6" fill="#F9B018" stroke="#1a0f0c" strokeWidth="10" strokeLinejoin="round" paintOrder="stroke" pointerEvents="none">
+                <text x={B.x + B.w / 2} y={B.y + 112} textAnchor="middle" fontFamily="Libre Baskerville" fontWeight="700" fontSize="56" letterSpacing="4" fill="#F9B018" stroke="#1a0f0c" strokeWidth="9" strokeLinejoin="round" paintOrder="stroke" pointerEvents="none">
                   {z.label.toUpperCase()}
                 </text>
               )}
@@ -208,7 +208,7 @@ export function MapView({ mode, booths, facilities, rooms, status, onPin, onRoom
             ))}
           {booths.map((b) => {
             const st = status[b.id] ?? 'none'
-            return <circle key={b.id} cx={b.x} cy={b.y} r={6 * px} fill={st === 'none' ? 'none' : INK} stroke={INK} strokeWidth="1.6" vectorEffect="non-scaling-stroke" />
+            return <circle key={b.id} cx={b.x} cy={b.y} r={8 * px} fill={st === 'none' ? 'none' : INK} stroke={INK} strokeWidth="2.2" vectorEffect="non-scaling-stroke" />
           })}
         </motion.g>
 

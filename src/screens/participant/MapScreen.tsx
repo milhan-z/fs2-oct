@@ -51,6 +51,8 @@ export function MapScreen() {
   const rooms = roomCounts(content)
   const tabs: { key: MapMode; label: string; n?: number }[] = [{ key: BUILDING, label: 'Whole building' }, ...rooms.map((r) => ({ key: r.label, label: r.label, n: r.n }))]
   const shownMode = tabs.some((x) => x.key === mode) ? mode : BUILDING
+  const roomBooths = booths.filter((b) => boothRoom(b, content) === shownMode)
+  const roomStamped = roomBooths.filter((b) => prog.stamped.has(b.id)).length
   const next = nextStep(content, state, prog)
   const map = (interactive: boolean) => (
     <MapView
@@ -103,7 +105,25 @@ export function MapScreen() {
         ))}
       </div>
 
-      <FoldedMap renderMap={map} />
+      <FoldedMap renderMap={map}>
+        {/* inside a room: a clear way back to the whole building, and how far along the room is */}
+        {shownMode !== BUILDING && (
+          <>
+            <button
+              type="button"
+              onClick={() => setMode(BUILDING)}
+              className="absolute top-2 left-2 z-10 flex min-h-11 items-center gap-1.5 rounded-[3px] bg-[#f3ebdd] px-3 text-[14px] font-semibold text-navy shadow-[var(--shadow-contact)]"
+            >
+              <span aria-hidden="true">←</span> Whole building
+            </button>
+            <p className="pointer-events-none absolute top-2 right-2 z-10 rounded-[3px] bg-black/55 px-2.5 py-1.5 text-right font-mono text-[11px] leading-tight text-cream">
+              {shownMode}
+              <br />
+              {roomStamped} of {roomBooths.length} stamped
+            </p>
+          </>
+        )}
+      </FoldedMap>
 
       {/* the legend sits under the map, never on top of it */}
       <ul className="mx-4 mt-7 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] font-semibold text-cream/90" aria-label="Pin legend">
@@ -114,7 +134,18 @@ export function MapScreen() {
             <li className="text-ok-bright">● Notes done</li>
           </>
         ) : (
-          <li>Tap a room, or use the tabs, to zoom in</li>
+          <>
+            <li className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-3 rounded-full border-2 border-[#e05a50]" aria-hidden="true" /> Red circle = a booth
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-3 rounded-full bg-[#e05a50]" aria-hidden="true" /> Filled = you were stamped
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-3 rounded-[2px] bg-[#F3EBDD]" aria-hidden="true" /> Facility
+            </li>
+            <li className="basis-full text-cream/75">Tap a room block (or a tab above) to zoom in and see each booth.</li>
+          </>
         )}
       </ul>
 
