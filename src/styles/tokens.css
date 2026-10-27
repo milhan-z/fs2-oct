@@ -91,7 +91,16 @@
     min-height: 100%;
     background: var(--color-bg-0);
   }
+  /* the page never zooms and never scrolls sideways (the map handles its own pinch with pointer events) */
+  html {
+    overflow-x: hidden;
+    touch-action: pan-x pan-y;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   body {
+    overflow-x: clip;
+    max-width: 100%;
     margin: 0;
     padding-bottom: var(--kb, 0px); /* room for the phone keyboard on plain scrolling pages (staff, admin) */
     font-family: var(--font-sans);

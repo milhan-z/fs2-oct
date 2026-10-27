@@ -12,6 +12,9 @@ import '@fontsource/courier-prime/700.css'
 import './styles/tokens.css'
 import { App } from './app/App'
 
+// iOS Safari ignores user-scalable=no: stop its pinch-to-zoom gesture as well
+for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false })
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

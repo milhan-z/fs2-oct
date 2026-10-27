@@ -83,9 +83,9 @@ export function MapScreen() {
   )
 
   return (
-    <div className="fade-in mat-cover relative flex min-h-full flex-col pb-3 text-cream">
+    <div className="fade-in mat-cover relative flex h-full min-h-0 flex-col overflow-hidden pb-2 text-cream">
       {/* paper label stuck inside the back cover */}
-      <div className="mat-paper relative mx-3 mt-11 flex items-center gap-3 px-3 py-2.5 shadow-[var(--shadow-contact)]">
+      <div className="mat-paper relative mx-3 mt-11 flex flex-none items-center gap-3 px-3 py-2 shadow-[var(--shadow-contact)]">
         <div className="aspect-[3/4] w-10 flex-none overflow-hidden bg-[#2a2f37] shadow-[var(--shadow-contact)]">
           {state.participant.photo && <FadeImg src={state.participant.photo} className="h-full w-full object-cover" />}
         </div>
@@ -98,12 +98,12 @@ export function MapScreen() {
         </p>
       </div>
 
-      <button type="button" data-tour="next" onClick={(e) => (setOrigin(e.currentTarget), nav(next.to))} className="mx-3 mt-4 flex items-center gap-2 text-left">
+      <button type="button" data-tour="next" onClick={(e) => (setOrigin(e.currentTarget), nav(next.to))} className="mx-3 mt-3 flex flex-none items-center gap-2 text-left">
         <Tape className="flex-none text-[12px]">Next up</Tape>
         <span className="bg-yellow px-2.5 py-1 text-[14px] leading-tight font-semibold text-navy shadow-[var(--shadow-contact)]">{next.label}</span>
       </button>
 
-      <div role="tablist" aria-label="Map view" className="mx-4 mt-4 flex gap-5">
+      <div role="tablist" aria-label="Map view" className="mx-4 mt-1 flex flex-none gap-5">
         {tabs.map((m) => (
           <button key={m.key} role="tab" aria-selected={shownMode === m.key} onClick={() => setMode(m.key)} className={`relative min-h-11 text-[15px] whitespace-nowrap ${shownMode === m.key ? 'font-semibold text-cream' : 'text-cream/60'}`}>
             {m.label}
@@ -134,7 +134,7 @@ export function MapScreen() {
       </FoldedMap>
 
       {/* the legend sits under the map, never on top of it */}
-      <ul className="mx-4 mt-7 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] font-semibold text-cream/90" aria-label="Pin legend">
+      <ul className="mx-4 mt-5 flex flex-none flex-wrap items-center gap-x-4 gap-y-0.5 text-[12px] leading-tight font-semibold text-cream/90" aria-label="Pin legend">
         {shownMode !== BUILDING ? (
           <>
             <li>○ Not yet</li>
@@ -203,7 +203,7 @@ function FoldedMap({ renderMap, children, onZoomOut }: { renderMap: (interactive
 
   return (
     <div
-      className="relative mx-3 mt-2 min-h-[380px] flex-1"
+      className="relative mx-3 mt-2 min-h-[200px] flex-1"
       style={{ perspective: 1100, touchAction: onZoomOut ? 'pan-y' : undefined }}
       onPointerDown={(e) => {
         fingers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
@@ -287,7 +287,7 @@ function nextStep(content: Content, state: MyState, prog: Progress): { label: st
 /** The map page's own placeholder: same blocks in the same places, so the real page fades in without a jump. */
 function MapSkeleton() {
   return (
-    <div className="mat-cover relative flex min-h-full flex-col pb-3" aria-busy="true" aria-label="Loading the booth map">
+    <div className="mat-cover relative flex h-full min-h-0 flex-col overflow-hidden pb-2" aria-busy="true" aria-label="Loading the booth map">
       <div className="mat-paper relative mx-3 mt-11 flex items-center gap-3 px-3 py-2.5 shadow-[var(--shadow-contact)]">
         <div className="aspect-[3/4] w-10 flex-none bg-ink/15 motion-safe:animate-pulse" />
         <div className="flex-1">
@@ -303,7 +303,7 @@ function MapSkeleton() {
         <div className="h-5 w-16 bg-cream/20 motion-safe:animate-pulse" />
         <div className="h-5 w-28 bg-cream/10 motion-safe:animate-pulse" />
       </div>
-      <div className="relative mx-3 mt-2 min-h-[380px] flex-1 rounded-[3px] bg-night-ink motion-safe:animate-pulse" style={{ backgroundImage: 'var(--tex-noise)' }} />
+      <div className="relative mx-3 mt-2 min-h-[200px] flex-1 rounded-[3px] bg-night-ink motion-safe:animate-pulse" style={{ backgroundImage: 'var(--tex-noise)' }} />
     </div>
   )
 }
